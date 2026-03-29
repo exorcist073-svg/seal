@@ -19,21 +19,15 @@ function getSigner(pk?: string) {
 }
 
 function stakerCondition() {
+  const revealAddress = process.env.SEAL_REVEAL_ADDRESS ?? "";
   return [
     {
-      conditionType: "evmContract" as const,
-      contractAddress: process.env.CONTRACT_ADDRESS ?? "",
+      contractAddress: "",
+      standardContractType: "" as const,
       chain: "baseSepolia" as const,
-      functionName: "isRegisteredStaker",
-      functionParams: [":userAddress"],
-      functionAbi: {
-        name: "isRegisteredStaker",
-        type: "function",
-        stateMutability: "view",
-        inputs: [{ name: "account", type: "address", internalType: "address" }],
-        outputs: [{ name: "", type: "bool", internalType: "bool" }],
-      },
-      returnValueTest: { key: "", comparator: "=" as const, value: "true" },
+      method: "",
+      parameters: [":userAddress"],
+      returnValueTest: { comparator: "=" as const, value: revealAddress.toLowerCase() },
     },
   ];
 }
@@ -61,20 +55,17 @@ export interface EncryptedKey {
   dataToEncryptHash: string;
 }
 
-// Encrypt the AES key via Lit with staker access conditions.
-// No auth needed at encrypt time — conditions are baked in.
 export async function encryptBlobKey(aesKey: Buffer): Promise<EncryptedKey> {
   const lit = await getLit();
 
   const { ciphertext, dataToEncryptHash } = await lit.encrypt({
     dataToEncrypt: new Uint8Array(aesKey),
-    evmContractConditions: stakerCondition(),
+    accessControlConditions: stakerCondition(),
   });
 
   return { ciphertext, dataToEncryptHash };
 }
 
-// Decrypt the AES key — requester wallet checked against staker condition at decrypt time.
 export async function decryptBlobKey(
   encryptedKey: EncryptedKey,
   requesterPk: string
@@ -87,15 +78,13 @@ export async function decryptBlobKey(
       ciphertext: encryptedKey.ciphertext,
       dataToEncryptHash: encryptedKey.dataToEncryptHash,
     },
-    evmContractConditions: stakerCondition(),
+    accessControlConditions: stakerCondition(),
     authContext: authContext as any,
   });
 
   return Buffer.from(decryptedData);
 }
 
-// AES-256-GCM encrypt the raw reasoning blob from Dev B.
-// Returns encrypted bytes (→ Filecoin), key + iv (→ encryptBlobKey / stored with CID record).
 export function encryptBlob(blob: string): { encrypted: Buffer; key: Buffer; iv: Buffer } {
   const key = randomBytes(32);
   const iv = randomBytes(12);
@@ -108,7 +97,6 @@ export function encryptBlob(blob: string): { encrypted: Buffer; key: Buffer; iv:
   return { encrypted, key, iv };
 }
 
-// Decrypt blob after recovering AES key from Lit.
 export function decryptBlob(encrypted: Buffer, key: Buffer, iv: Buffer): string {
   const authTag = encrypted.slice(-16);
   const data = encrypted.slice(0, -16);
