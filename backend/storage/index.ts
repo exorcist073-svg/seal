@@ -9,7 +9,7 @@ export type { VaultEntry } from "./vault.js";
 export async function sealBlob(
   reasoningBlob: string,
   commitmentHash: string,
-  authorizedAddress: string
+  authorizedAddress: string = ""
 ): Promise<{
   cid: string;
   url: string;

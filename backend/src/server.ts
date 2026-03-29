@@ -208,7 +208,7 @@ app.get('/api/chain/stats', async (_req, res) => {
 app.post('/api/pipeline-onchain', async (req, res) => {
   if (!sealContract) return res.status(503).json({ error: 'On-chain not configured' });
   try {
-    const { input, systemPrompt } = req.body as { input: TEEInput; systemPrompt: string };
+    const { input, systemPrompt, authorizedAddress } = req.body as { input: TEEInput; systemPrompt: string; authorizedAddress: string };
     const agent = new SEALFluenceAgent(input.agentId, ANTHROPIC_API_KEY, GEMINI_API_KEY);
 
     // Stage 01+02: Attest inputs + Reason in TEE
@@ -218,7 +218,7 @@ app.post('/api/pipeline-onchain', async (req, res) => {
     const { attestation, commitment } = await agent.commitAndAttest(input, reasoning);
 
     // Seal blob (encrypt, pin to filecoin and encrypt key via Lit)
-    const sealed = await sealBlob(reasoning.reasoningBlob, commitment.merkleRoot);
+    const sealed = await sealBlob(reasoning.reasoningBlob, commitment.merkleRoot, authorizedAddress);
     await logAuditEntry({
       event: 'commit',
       agentId: input.agentId,

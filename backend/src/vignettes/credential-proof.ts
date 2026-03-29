@@ -17,7 +17,7 @@ export class CredentialProofDemo {
   async runDemo(
     serviceName: string,
     requiredPermission: string,
-    authorizedAddress: string
+    authorizedAddress: string = ""
   ): Promise<{
     proofId: string;
     credentialAttestation: any;
