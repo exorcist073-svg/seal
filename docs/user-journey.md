@@ -42,9 +42,9 @@ The **feature checklist** below mirrors the [Features](../README.md#features) se
 | F3 | **Commit-before-execute enforcement** | Contract or runtime gate: no execution narrative without commitment / nonce ordering story. | [ ] |
 | F4 | **Execution consistency proof** | Execution hash / attestation tied to same bundle as reasoning; “same decision → same action” story. | [ ] |
 | F5 | **Verified delivery** | Tx bytes or relayer path: committed vs delivered hash comparison or explicit mitigation. | [ ] |
-| F6 | **Selective, authorized reveal** | Lit (or equivalent) + who can decrypt; blob on Filecoin/Storacha with CID in commitment path. | [ ] |
+| F6 | **Selective, authorized reveal** | Lit (or equivalent) + who can decrypt; blob on Filecoin/Storacha with CID in commitment path. | [x] |
 | F7 | **Economic stake enforcement** | NEAR credential NFT / registry / slash story—at least one live or clearly scripted path. | [ ] |
-| F8 | **Credential isolation (Lit vault)** | Agent proves tool/API access without exposing keys (credential-proof vignette). | [ ] |
+| F8 | **Credential isolation (Lit vault)** | Agent proves tool/API access without exposing keys (credential-proof vignette). | [x] |
 | F9 | **Merkle-batched commitments** | Merkle root shown on-chain or in logs; batched commitment story if gas is discussed. | [ ] |
 | F10 | **Sponsor integrations called out** | Lit, Filecoin/Storacha, NEAR, Flow (if used)—each named in deck or live demo. | [ ] |
 | F11 | **Stakeholder UI / audit path** | Dashboard or script: commitment viewer + reveal trigger + attestation inspect (can be minimal). | [ ] |
@@ -57,13 +57,13 @@ The **feature checklist** below mirrors the [Features](../README.md#features) se
 | Step | Logic flow | Done |
 |------|------------|------|
 | C1 | Repository up to date; `backend/` and `contracts/` deps install (`npm install`, Foundry libs via submodules). | [ ] |
-| C2 | `.env` / `backend/.env` aligned with `backend/.env.example` (EVM RPC, keys, Lit, Storacha, LLM keys as needed). | [ ] |
+| C2 | `.env` / `backend/.env` aligned with `backend/.env.example` (EVM RPC, keys, Lit, Storacha, LLM keys as needed). | [x] |
 | C3 | SEAL contract deployed to chosen testnet; `SEAL_CONTRACT_ADDRESS` set. | [ ] |
 | C4 | Agent registration path exercised (e.g. NEAR credential NFT / registry) if shown in demo. | [ ] |
 | C5 | TEE runtime: attestation acceptable for demo per README disclosure; real Nitro/TDX/Phala if claiming production path. | [ ] |
 | C6 | Backend demo server runs; health and vignette routes callable (`backend/src/server.ts`). | [ ] |
 | C7 | CLI vignette runner works (`backend/index.ts`) for scripted recordings. | [ ] |
-| C8 | Sponsor story clear: Lit (keys + access), Filecoin/Storacha (CIDs), NEAR (stake/registry), Flow (if micro-settlement shown). | [ ] |
+| C8 | Sponsor story clear: Lit (keys + access), Filecoin/Storacha (CIDs), NEAR (stake/registry), Flow (if micro-settlement shown). | [x] |
 
 ---
 
@@ -81,7 +81,7 @@ The **feature checklist** below mirrors the [Features](../README.md#features) se
 | 1.4 | **Commit + attest:** `commitAndAttest` → merkle root, TEE quote snippet, nonce. | [ ] |
 | 1.5 | **Execute in TEE:** `executeInTEE` → tx payload + execution attestation / execution hash. | [ ] |
 | 1.6 | **Delivery:** Commit tx bytes or relayer path if applicable; show match to committed hash if in scope. | [ ] |
-| 1.7 | **Selective reveal:** Encrypted blob + CID + Lit conditions referenced or simulated; auditor path narrated. | [ ] |
+| 1.7 | **Selective reveal:** Encrypted blob + CID + Lit conditions referenced or simulated; auditor path narrated. | [x] |
 | 1.8 | **Demo wrap:** Show task id, input hash, reasoning hash, commitment root end-to-end. | [ ] |
 
 ---
@@ -112,12 +112,12 @@ The **feature checklist** below mirrors the [Features](../README.md#features) se
 
 | Step | Logic flow | Done |
 |------|------------|------|
-| 3.1 | **Attest inputs:** `TEEInput` includes Lit vault ref, access conditions, credential hash (not the secret). | [ ] |
+| 3.1 | **Attest inputs:** `TEEInput` includes Lit vault ref, access conditions, credential hash (not the secret). | [x] |
 | 3.2 | **Reason in TEE:** LLM output proves credential access without key material. | [ ] |
 | 3.3 | **Commit + attest:** Attestation + commitment for credential proof. | [ ] |
-| 3.4 | **Execute in TEE:** Build access proof object (service, permission, execution hash, quote). | [ ] |
-| 3.5 | **Lit conditions:** Document staker / auditor / multisig reveal conditions (demo may use placeholders). | [ ] |
-| 3.6 | **Demo wrap:** `proofId`, access proof vs raw credential, verification story for a relying party. | [ ] |
+| 3.4 | **Execute in TEE:** Build access proof object (service, permission, execution hash, quote). | [x] |
+| 3.5 | **Lit conditions:** Document staker / auditor / multisig reveal conditions (demo may use placeholders). | [x] |
+| 3.6 | **Demo wrap:** `proofId`, access proof vs raw credential, verification story for a relying party. | [x] |
 
 ---
 
@@ -130,9 +130,9 @@ The **feature checklist** below mirrors the [Features](../README.md#features) se
 | Step | Logic flow | Done |
 |------|------------|------|
 | 4.1 | UI or script loads commitment record (merkle root, nonce) for a task. | [ ] |
-| 4.2 | Authorized user triggers reveal (Lit decrypt path or mock). | [ ] |
-| 4.3 | Hash match: revealed blob ↔ on-chain commitment; attestation quote inspected. | [ ] |
-| 4.4 | Audit narrative: who may decrypt, when, and what proves non-repudiation. | [ ] |
+| 4.2 | Authorized user triggers reveal (Lit decrypt path or mock). | [x] |
+| 4.3 | Hash match: revealed blob ↔ on-chain commitment; attestation quote inspected. | [x] |
+| 4.4 | Audit narrative: who may decrypt, when, and what proves non-repudiation. | [x] |
 
 ---
 
