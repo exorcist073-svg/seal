@@ -1,30 +1,34 @@
+import { BayerDitherHero } from "@/components/hero/BayerDitherHero";
+
 export function Hero() {
   return (
-    <section className="seal-grid relative overflow-hidden border-b border-zinc-800/80 px-4 py-20 sm:px-6 sm:py-28">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-teal-950/20 via-transparent to-transparent" />
-      <div className="relative mx-auto max-w-6xl">
-        <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-teal-400/90">
-          PL Genesis · March 2026
-        </p>
-        <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-tight text-zinc-50 sm:text-5xl sm:leading-tight">
-          SĒAL — Secure Enclave Agent Layer
+    <section className="relative min-h-[88vh] overflow-hidden border-b border-[var(--border)]">
+      <BayerDitherHero
+        imageSrc="/hero-seal-iceberg.jpg"
+        className="absolute inset-0 min-h-[88vh]"
+      />
+      <div className="pointer-events-none relative z-10 mx-auto flex min-h-[88vh] max-w-7xl flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+        <p className="seal-section-label !text-[#c8cdff]">PL Genesis · March 2026</p>
+        <h1 className="font-display mt-6 max-w-5xl text-[4.2rem] font-semibold leading-[0.95] tracking-tight text-[#f2f4ff] sm:text-[5.2rem] lg:text-[6.3rem]">
+          SĒAL
+          <br />
+          Secure Enclave Agent Layer
         </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
-          Confidential, verifiable execution infrastructure for AI agents operating on-chain.
-          Commit, attest, execute, deliver — with selective reveal when accountability matters.
+        <p className="mt-8 max-w-md text-2xl leading-tight text-[#ecefff]">
+          Answering all of your agent integrity needs.
         </p>
-        <div className="mt-10 flex flex-wrap gap-4">
+        <div className="pointer-events-auto mt-12 flex flex-wrap gap-4">
           <a
             href="#reveal"
-            className="inline-flex items-center justify-center rounded-full bg-teal-500 px-5 py-2.5 text-sm font-medium text-zinc-950 transition-opacity hover:opacity-90"
+            className="inline-flex items-center justify-center border border-[#d5d9ff] bg-[#eef0ff] px-8 py-3 text-sm font-semibold text-[var(--accent)] transition-opacity hover:opacity-90"
           >
-            View reveal mock
+            View demo
           </a>
           <a
             href="#pipeline"
-            className="inline-flex items-center justify-center rounded-full border border-zinc-600 px-5 py-2.5 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-900/50"
+            className="inline-flex items-center justify-center border border-[#8790ff] bg-transparent px-8 py-3 text-sm font-medium text-[#e5e8ff] transition-colors hover:bg-[#2630ca]"
           >
-            Six-stage pipeline
+            [ &nbsp; Six-stage pipeline &nbsp; ]
           </a>
         </div>
       </div>

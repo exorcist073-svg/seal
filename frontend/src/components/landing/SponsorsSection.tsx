@@ -21,17 +21,21 @@ const sponsors = [
 
 export function SponsorsSection() {
   return (
-    <section id="sponsors" className="scroll-mt-14 border-b border-zinc-800/80 px-4 py-16 sm:px-6 sm:py-20">
+    <section id="sponsors" className="scroll-mt-16 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-6xl">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-teal-400/90">Sponsor integrations</p>
-        <h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-          How SEAL uses each stack
+        <p className="seal-section-label">Latest news</p>
+        <h2 className="mt-4 max-w-3xl text-6xl font-semibold tracking-tight text-[var(--foreground)] sm:text-7xl">
+          Integrations in motion
         </h2>
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
-          {sponsors.map((s) => (
-            <li key={s.name} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <h3 className="font-medium text-teal-300/95">{s.name}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-500">{s.body}</p>
+        <ul className="mt-12 grid gap-3 md:grid-cols-3">
+          {sponsors.map((s, i) => (
+            <li
+              key={s.name}
+              className={i === 0 ? "border border-[var(--border-strong)] bg-[var(--accent)] p-6 text-[#ecedff]" : "border border-[var(--border-strong)] bg-[var(--surface)] p-6"}
+            >
+              <p className={`text-sm ${i === 0 ? "text-[#d8dbff]" : "text-[var(--muted-light)]"}`}>02.0{i + 5}</p>
+              <h3 className={`mt-4 text-3xl leading-tight font-medium ${i === 0 ? "text-[#f1f2ff]" : "text-[var(--foreground)]"}`}>{s.name}</h3>
+              <p className={`mt-4 text-sm leading-relaxed ${i === 0 ? "text-[#e6e7ff]" : "text-[var(--muted)]"}`}>{s.body}</p>
             </li>
           ))}
         </ul>

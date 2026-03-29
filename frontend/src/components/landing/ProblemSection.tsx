@@ -28,24 +28,25 @@ const gaps = [
 
 export function ProblemSection() {
   return (
-    <section className="border-b border-zinc-800/80 px-4 py-16 sm:px-6 sm:py-20">
+    <section className="border-b border-[var(--border)] bg-[var(--surface-alt)] px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-6xl">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-teal-400/90">The problem</p>
-        <h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+        <p className="seal-section-label">The problem</p>
+        <h2 className="font-display mt-4 max-w-3xl text-3xl font-medium tracking-tight text-stone-900 sm:text-4xl lg:text-[2.75rem]">
           Trust-me infrastructure for agentic economies
         </h2>
-        <p className="mt-4 max-w-2xl text-zinc-400">
-          Autonomous agents manage treasuries, trades, and coordination on-chain — yet infrastructure
-          fails across five dimensions at once.
+        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--muted)]">
+          Autonomous agents manage treasuries, trades, and coordination on-chain — yet infrastructure fails across
+          five dimensions at once.
         </p>
-        <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {gaps.map((g) => (
             <li
               key={g.title}
-              className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 shadow-sm shadow-black/20"
+              className="flex flex-col border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm shadow-stone-900/5"
             >
-              <h3 className="font-medium text-zinc-100">{g.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-500">{g.body}</p>
+              <h3 className="font-display text-xl font-medium text-stone-900">{g.title}</h3>
+              <div className="seal-divider my-4 w-12" />
+              <p className="text-sm leading-relaxed text-[var(--muted)]">{g.body}</p>
             </li>
           ))}
         </ul>

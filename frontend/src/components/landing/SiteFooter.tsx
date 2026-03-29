@@ -1,16 +1,31 @@
 export function SiteFooter() {
   return (
-    <footer className="px-4 py-12 sm:px-6">
+    <footer className="bg-[var(--surface-alt)] px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-6 text-sm leading-relaxed text-zinc-500">
-          <p className="font-medium text-zinc-400">TEE disclosure</p>
-          <p className="mt-2">
-            Production uses AWS Nitro Enclaves or Intel TDX. Hackathon demo may use a mock attestation signer
-            that emits correctly structured quotes — disclosed transparently; architecture remains valid.
-          </p>
+        <div className="grid gap-12 border-t border-[var(--border-strong)] pt-12 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <p className="seal-badge w-fit">SĒAL CONSULTANTS INC.</p>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
+              Secure Enclave Agent Layer — confidential, verifiable execution infrastructure for AI agents
+              operating on-chain.
+            </p>
+          </div>
+          <div>
+            <p className="seal-section-label">Disclosure</p>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
+              Production uses AWS Nitro Enclaves or Intel TDX. Hackathon demo may use a mock attestation signer
+              that emits correctly structured quotes — disclosed transparently; architecture remains valid.
+            </p>
+          </div>
+          <div>
+            <p className="seal-section-label">Stay in touch</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Open-source hackathon build · PL Genesis March 2026
+            </p>
+          </div>
         </div>
-        <p className="mt-8 text-center font-mono text-xs text-zinc-600">
-          SĒAL · Secure Enclave Agent Layer · mockup UI
+        <p className="mt-12 text-center text-xs uppercase tracking-[0.16em] text-[var(--muted-light)]">
+          SĒAL · Secure Enclave Agent Layer · interface mockup
         </p>
       </div>
     </footer>

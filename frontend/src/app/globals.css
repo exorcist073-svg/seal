@@ -1,36 +1,92 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "GT America Mono";
+  src: url("/GT-America-Mono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --background: #030712;
-  --foreground: #f4f4f5;
-  --seal-accent: #2dd4bf;
-  --seal-accent-dim: rgba(45, 212, 191, 0.12);
-  --seal-border: rgba(244, 244, 245, 0.08);
-  --seal-card: rgba(24, 24, 27, 0.65);
+  --oci-navy: #05058a;
+  --oci-electric: #2020e8;
+  --oci-hero-bg: #0808b0;
+  --oci-footer: #030350;
+  --oci-paper: #f5f5f0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-seal-accent: var(--seal-accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "GT America Mono", var(--font-inter), system-ui, sans-serif;
 }
 
 html {
   scroll-behavior: smooth;
+  cursor: none;
+  margin: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  margin: 0;
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  background: var(--oci-paper);
+  color: var(--oci-navy);
+  font-family: "GT America Mono", var(--font-inter), system-ui, sans-serif;
 }
 
-/* Subtle grid backdrop */
-.seal-grid {
-  background-image:
-    linear-gradient(rgba(244, 244, 245, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(244, 244, 245, 0.03) 1px, transparent 1px);
-  background-size: 64px 64px;
+a,
+button,
+[role="button"],
+input,
+textarea,
+select,
+label[for] {
+  cursor: none;
 }
+
+/* Sharp corners site-wide */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
+
+/* Hero entrance — CSS only */
+@keyframes oci-hero-slide {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes oci-hero-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.oci-hero-line {
+  opacity: 0;
+  animation: oci-hero-slide 0.85s ease forwards;
+}
+
+.oci-hero-line--2 {
+  animation-delay: 0.15s;
+}
+
+.oci-hero-tagline {
+  opacity: 0;
+  animation: oci-hero-fade 0.9s ease 1s forwards;
+}
+

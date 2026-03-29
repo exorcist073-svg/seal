@@ -38,29 +38,35 @@ const layers = [
 
 export function ArchitectureSection() {
   return (
-    <section id="architecture" className="scroll-mt-14 border-b border-zinc-800/80 px-4 py-16 sm:px-6 sm:py-20">
+    <section id="architecture" className="scroll-mt-16 border-b border-[var(--border)] px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-6xl">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-teal-400/90">Architecture</p>
-        <h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
+        <p className="seal-section-label">Architecture</p>
+        <h2 className="font-display mt-4 max-w-3xl text-3xl font-medium tracking-tight text-stone-900 sm:text-4xl lg:text-[2.75rem]">
           Stack at a glance
         </h2>
-        <div className="mt-10 overflow-x-auto rounded-2xl border border-zinc-800">
+        <div className="mt-12 overflow-x-auto border border-[var(--border)] bg-[var(--surface)]">
           <table className="w-full min-w-[640px] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                <th className="px-4 py-3 font-medium text-zinc-300">Layer</th>
-                <th className="px-4 py-3 font-medium text-zinc-300">Component</th>
-                <th className="px-4 py-3 font-medium text-zinc-300">Role</th>
+              <tr className="border-b border-[var(--border)] bg-[var(--surface-alt)]">
+                <th className="px-5 py-4 font-sans text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Layer
+                </th>
+                <th className="px-5 py-4 font-sans text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Component
+                </th>
+                <th className="px-5 py-4 font-sans text-xs font-semibold uppercase tracking-wider text-stone-500">
+                  Role
+                </th>
               </tr>
             </thead>
             <tbody>
               {layers.map((row) => (
-                <tr key={row.component} className="border-b border-zinc-800/80 last:border-0">
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-teal-400/90">
+                <tr key={row.component} className="border-b border-[var(--border)] last:border-0">
+                  <td className="whitespace-nowrap px-5 py-4 font-medium text-[var(--accent-subtle)]">
                     {row.layer}
                   </td>
-                  <td className="px-4 py-3 font-medium text-zinc-200">{row.component}</td>
-                  <td className="px-4 py-3 text-zinc-500">{row.role}</td>
+                  <td className="px-5 py-4 font-medium text-stone-900">{row.component}</td>
+                  <td className="px-5 py-4 text-[var(--muted)]">{row.role}</td>
                 </tr>
               ))}
             </tbody>

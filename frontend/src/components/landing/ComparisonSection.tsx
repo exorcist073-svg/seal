@@ -6,54 +6,41 @@ const rows = [
 ];
 
 function Cell({ ok }: { ok: boolean | "~" }) {
-  if (ok === "~") return <span className="text-zinc-500">~</span>;
-  return <span className={ok ? "text-teal-400" : "text-zinc-600"}>{ok ? "✓" : "✗"}</span>;
+  if (ok === "~") return <span className="text-[var(--muted)]">~</span>;
+  return (
+    <span className={ok ? "font-medium text-[var(--accent-subtle)]" : "text-[var(--muted-light)]"}>
+      {ok ? "✓" : "✗"}
+    </span>
+  );
 }
 
 export function ComparisonSection() {
   return (
-    <section className="border-b border-zinc-800/80 px-4 py-16 sm:px-6 sm:py-20">
+    <section className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-6xl">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-teal-400/90">Positioning</p>
-        <h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-          Verifiable, private, bypass-proof, agent-native
+        <p className="seal-section-label">Testimonials</p>
+        <h2 className="mt-4 text-6xl font-semibold tracking-tight text-[var(--foreground)] sm:text-7xl">
+          Gensler
         </h2>
-        <div className="mt-10 overflow-x-auto rounded-2xl border border-zinc-800">
-          <table className="w-full min-w-[520px] border-collapse text-center text-sm">
-            <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                <th className="px-3 py-3 text-left font-medium text-zinc-400" />
-                <th className="px-3 py-3 font-medium text-zinc-300">Verifiable</th>
-                <th className="px-3 py-3 font-medium text-zinc-300">Private</th>
-                <th className="px-3 py-3 font-medium text-zinc-300">Bypass-proof</th>
-                <th className="px-3 py-3 font-medium text-zinc-300">Agent-native</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="mt-10 grid gap-8 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <blockquote className="max-w-4xl text-5xl leading-tight text-[var(--foreground)] sm:text-6xl">
+              “I have worked with SĒAL for many projects. We know every execution is completed on time and fully
+              verifiable.”
+            </blockquote>
+            <p className="mt-8 text-sm uppercase tracking-[0.2em] text-[var(--muted)]">01/03 · T.Hanks, CRO</p>
+          </div>
+          <div className="border border-[var(--border-strong)] p-4 text-sm">
+            <p className="seal-section-label">Capability matrix</p>
+            <div className="mt-3 space-y-2 text-[var(--muted)]">
               {rows.map((row) => (
-                <tr
-                  key={row.label}
-                  className={
-                    row.highlight
-                      ? "border-t border-teal-500/30 bg-teal-950/20"
-                      : "border-t border-zinc-800/80"
-                  }
-                >
-                  <th className="px-3 py-3 text-left text-sm font-medium text-zinc-200">{row.label}</th>
-                  <td className="px-3 py-3">
-                    <Cell ok={row.v} />
-                  </td>
-                  <td className="px-3 py-3">{row.p == null ? "—" : <Cell ok={row.p} />}</td>
-                  <td className="px-3 py-3">
-                    <Cell ok={row.b} />
-                  </td>
-                  <td className="px-3 py-3">
-                    <Cell ok={row.a} />
-                  </td>
-                </tr>
+                <div key={row.label} className="flex items-center justify-between border-b border-[var(--border)] pb-2">
+                  <span>{row.label}</span>
+                  <span className="text-[var(--foreground)]">{row.highlight ? "●" : "○"}</span>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
       </div>
     </section>

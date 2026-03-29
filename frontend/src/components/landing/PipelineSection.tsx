@@ -39,31 +39,32 @@ const stages = [
 
 export function PipelineSection() {
   return (
-    <section id="pipeline" className="scroll-mt-14 border-b border-zinc-800/80 px-4 py-16 sm:px-6 sm:py-20">
+    <section id="pipeline" className="scroll-mt-16 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-16 sm:px-6 sm:py-24">
       <div className="mx-auto max-w-6xl">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-teal-400/90">How it works</p>
-        <h2 className="mt-3 max-w-2xl text-2xl font-semibold tracking-tight text-zinc-50 sm:text-3xl">
-          Six-stage pipeline (contract-enforced)
+        <p className="seal-section-label">Pipeline</p>
+        <h2 className="font-display mt-4 max-w-3xl text-6xl font-semibold leading-[0.95] tracking-tight text-[var(--foreground)] sm:text-7xl">
+          Here at every step
         </h2>
-        <p className="mt-4 max-w-2xl text-zinc-400">
-          Every agent action follows this pipeline enforced by the SEAL smart contract.
+        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--muted)]">
+          Every agent action follows this contract-enforced pipeline — from attested inputs through selective
+          reveal.
         </p>
-        <ol className="mt-12 space-y-0">
+        <div className="mt-14 grid gap-8 sm:gap-10 md:grid-cols-2 lg:grid-cols-3">
           {stages.map((s) => (
-            <li
+            <div
               key={s.n}
-              className="relative flex gap-4 border-l border-zinc-800 pb-12 pl-8 last:border-l-transparent last:pb-0 sm:gap-6 sm:pl-10"
+              className="flex flex-col border border-[var(--border-strong)] bg-[#ecece8] p-5"
+              style={{ transform: s.n === "02" ? "rotate(1.5deg)" : s.n === "03" ? "rotate(-1.5deg)" : "none" }}
             >
-              <span className="absolute -left-[13px] top-0 flex h-[26px] w-[26px] items-center justify-center rounded-full border border-teal-500/50 bg-zinc-950 font-mono text-[10px] font-semibold text-teal-400 sm:-left-[14px] sm:h-7 sm:w-7 sm:text-xs">
-                {s.n}
-              </span>
-              <div className="min-w-0 flex-1 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 sm:p-6">
-                <h3 className="text-lg font-medium text-zinc-100">{s.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-500">{s.body}</p>
+              <div className="flex items-baseline justify-between">
+                <h3 className="font-display text-4xl font-medium text-[var(--foreground)]">{s.title}</h3>
+                <span className="mt-2 font-sans text-4xl tabular-nums text-[var(--foreground)]">{s.n}</span>
               </div>
-            </li>
+              <div className="seal-divider my-5 w-full max-w-[3rem]" />
+              <p className="text-sm leading-relaxed text-[var(--muted)]">{s.body}</p>
+            </div>
           ))}
-        </ol>
+        </div>
       </div>
     </section>
   );
