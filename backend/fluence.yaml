@@ -1,0 +1,22 @@
+# Fluence CPU Cloud deployment configuration for SEAL TEE
+#
+# Fluence currently uses a VM-based compute marketplace (console.fluence.network).
+# This backend runs as a standard Node.js server on a Fluence CPU Cloud VM.
+#
+# Deployment steps:
+#   1. Rent a VM via Fluence Console (2 vCPU, 4GB RAM, Ubuntu)
+#   2. SSH into the VM
+#   3. git clone, npm install, cp .env.example .env, fill keys
+#   4. npm start
+#
+# The old Aqua/Marine peer-to-peer model is deprecated.
+# aqua/ and service/ directories are kept for reference only.
+
+runtime: node
+entry: src/server.ts
+port: 3001
+env:
+  - ANTHROPIC_API_KEY
+  - RPC_URL
+  - CONTRACT_ADDRESS
+  - SIGNER_PRIVATE_KEY

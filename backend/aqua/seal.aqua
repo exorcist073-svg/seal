@@ -1,0 +1,52 @@
+-- Fluence Aqua composition script
+-- Defines how SEAL services compose on the Fluence network
+
+import "@fluencelabs/aqua-lib/builtin.aqua"
+
+-- Service interface
+service SEALTEE:
+    hash_inputs(input_json: string) -> string
+    reason_in_tee(input_json: string, system_prompt: string) -> string
+    commit_and_attest(input_json: string, reasoning_json: string) -> string
+    execute_in_tee(input_json: string, reasoning_json: string, attestation_json: string) -> string
+    get_agent_info() -> string
+    verify_attestation(attestation_quote: string) -> bool
+
+-- Main workflow: full commit-attest-execute pipeline
+func seal_pipeline(
+    node: PeerId,
+    input_json: string,
+    system_prompt: string
+) -> string:
+    on node:
+        -- Stage 01: Attest inputs
+        input_hash <- SEALTEE.hash_inputs(input_json)
+        
+        -- Stage 02: Reason in TEE
+        reasoning_json <- SEALTEE.reason_in_tee(input_json, system_prompt)
+        
+        -- Stage 03: Commit + Attest
+        commitment_json <- SEALTEE.commit_and_attest(input_json, reasoning_json)
+        
+        -- Stage 04: Execute in TEE
+        execution_json <- SEALTEE.execute_in_tee(input_json, reasoning_json, commitment_json)
+    
+    <- execution_json
+
+-- Quick hash for frontend verification
+func attest_inputs(
+    node: PeerId,
+    input_json: string
+) -> string:
+    on node:
+        hash <- SEALTEE.hash_inputs(input_json)
+    <- hash
+
+-- Verify attestation quote (for Dev A contract integration)
+func verify_quote(
+    node: PeerId,
+    attestation_quote: string
+) -> bool:
+    on node:
+        valid <- SEALTEE.verify_attestation(attestation_quote)
+    <- valid
