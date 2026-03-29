@@ -11,13 +11,14 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
     "@google/generative-ai": "^0.24.1",
-    "@web3-storage/w3up-client": "^16.0.0",
     "@lit-protocol/lit-client": "^8.3.1",
     "@lit-protocol/networks": "8.4.1",
+    "@web3-storage/w3up-client": "^16.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "ethers": "^6.13.0",
     "express": "^4.21.0",
+    "multiformats": "^13.4.2",
     "viem": "^2.0.0"
   },
   "devDependencies": {

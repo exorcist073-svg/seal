@@ -216,6 +216,16 @@ app.post('/api/pipeline-onchain', async (req, res) => {
     // Stage 03: Commit + Attest
     const { attestation, commitment } = await agent.commitAndAttest(input, reasoning);
 
+    // Seal blob (encrypt, pin to filecoin and encrypt key via Lit)
+    const sealed = await sealBlob(reasoning.reasoningBlob, commitment.merkleRoot);
+    await logAuditEntry({
+      event: 'commit',
+      agentId: input.agentId,
+      commitmentHash: commitment.merkleRoot,
+      timestamp: Date.now(),
+      metadata: { cid: sealed.cid, taskId: input.taskId }
+    });
+
     // Stage 03b: Submit commitment ON-CHAIN
     const taskIdBytes = ethers.id(commitment.taskId);
     const merkleRootBytes = ethers.id(commitment.merkleRoot);
@@ -251,6 +261,7 @@ app.post('/api/pipeline-onchain', async (req, res) => {
         contractAddress: CONTRACT_ADDRESS,
         chain: 'base-sepolia'
       },
+      sealed: { cid: sealed.cid, url: sealed.url, encryptedKey: sealed.encryptedKey, iv: sealed.iv },
       execution: { txData, executionHash: executionAttestation.executionHash },
       attestationQuote: attestation.teeQuote,
       signature: attestation.signature

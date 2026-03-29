@@ -67,6 +67,9 @@ contract SEAL is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     mapping(uint256 => mapping(address => bool)) public hasVoted;
     mapping(uint256 => mapping(address => bool)) public voteDirection; // true = for slash
 
+    // Lit Protocol: tracks addresses that have registered+staked an agent
+    mapping(address => bool) public registeredStakers;
+
     // ── Events ───────────────────────────────────────────
 
     event CommitmentSubmitted(
@@ -149,6 +152,7 @@ contract SEAL is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             agentOwner: msg.sender
         });
 
+        registeredStakers[msg.sender] = true;
         emit AgentRegistered(agentId, msg.sender, msg.value);
     }
 
@@ -411,6 +415,10 @@ contract SEAL is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function isPendingExecution(bytes32 taskId) external view returns (bool) {
         CommitmentData storage c = commitments[taskId];
         return c.committed && !c.executed;
+    }
+
+    function isRegisteredStaker(address account) external view returns (bool) {
+        return registeredStakers[account];
     }
 
     // ── Admin ────────────────────────────────────────────

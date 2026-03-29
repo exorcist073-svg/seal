@@ -118,6 +118,7 @@ export const SEAL_CONTRACT_ABI = [
   "function getCommitment(bytes32 taskId) view returns (bool committed, bool executed, bytes32 merkleRoot, uint256 nonce, uint256 timestamp, address submitter, bytes32 executionHash)",
   "function getNonce(bytes32 agentId) view returns (uint256)",
   "function isPendingExecution(bytes32 taskId) view returns (bool)",
+  "function isRegisteredStaker(address account) view returns (bool)",
   "function incrementNonce(bytes32 agentId)",
 
   // Dispute resolution
