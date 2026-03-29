@@ -7,6 +7,7 @@ import { ContractIntegration, SEAL_CONTRACT_ABI } from './contract-integration.j
 import { TreasuryAgentDemo } from './vignettes/treasury-agent.js';
 import { AgentToAgentDemo } from './vignettes/agent-to-agent.js';
 import { CredentialProofDemo } from './vignettes/credential-proof.js';
+import { sealBlob, revealBlob, verifyCid, logAuditEntry } from '../storage/index.js';
 
 const app = express();
 app.use(cors());
@@ -68,6 +69,16 @@ app.post('/api/pipeline', async (req, res) => {
     // Stage 03: Commit + Attest
     const { attestation, commitment } = await agent.commitAndAttest(input, reasoning);
 
+    // Seal blob (encrypt, pin to filecoin and encrypt key via Lit)
+    const sealed = await sealBlob(reasoning.reasoningBlob, commitment.merkleRoot);
+    await logAuditEntry({
+      event: 'commit',
+      agentId: input.agentId,
+      commitmentHash: commitment.merkleRoot,
+      timestamp: Date.now(),
+      metadata: { cid: sealed.cid, taskId: input.taskId }
+    });
+
     // Stage 04: Execute in TEE
     const { txData, executionAttestation } = await agent.executeInTEE(input, reasoning, attestation);
 
@@ -75,6 +86,7 @@ app.post('/api/pipeline', async (req, res) => {
       inputHash: reasoning.inputHash,
       reasoningHash: attestation.reasoningHash,
       commitment,
+      sealed: { cid: sealed.cid, url: sealed.url, encryptedKey: sealed.encryptedKey, iv: sealed.iv },
       execution: { txData, executionHash: executionAttestation.executionHash },
       attestationQuote: attestation.teeQuote,
       signature: attestation.signature
@@ -334,6 +346,31 @@ app.get('/api/chain/dispute/:disputeId', async (req, res) => {
   }
 });
 
+// Selective reveal, call this from the reveal ui with the requester's private key
+app.post('/api/reveal', async (req, res) => {
+  try {
+    const { cid, encryptedKey, iv, requesterPk } = req.body;
+    if (!cid || !encryptedKey || !iv || !requesterPk) {
+      return res.status(400).json({ error: 'cid, encryptedKey, iv, requesterPk are required' });
+    }
+    const [plaintext, cidValid] = await Promise.all([
+      revealBlob(cid, encryptedKey, iv, requesterPk),
+      verifyCid(cid, Buffer.from([])) // full verify happens client side with raw bytes
+    ]);
+
+    await logAuditEntry({
+      event: 'reveal',
+      agentId: 'reveal-requester',
+      commitmentHash: cid,
+      timestamp: Date.now(),
+      metadata: { cid }
+    });
+    res.json({ plaintext, cid });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Verify attestation quote ─────────────────────────────
 app.post('/api/verify-attestation', (req, res) => {
   try {
@@ -368,6 +405,7 @@ app.listen(PORT, () => {
   console.log(`     POST /api/demo/agent-to-agent`);
   console.log(`     POST /api/demo/credential-proof`);
   console.log(`     POST /api/verify-attestation`);
+  console.log(`     POST /api/reveal`);
   console.log(`     POST /api/chain/submit-commitment`);
   console.log(`     POST /api/chain/execute-task`);
   console.log(`     GET  /api/chain/commitment/:taskId`);
