@@ -1,4 +1,5 @@
 import SEALFluenceAgent, { TEEInput } from '../agent.js';
+import { storeCredential, sealBlob } from '../../storage/index.js';
 
 /**
  * Demo Vignette 3: Credential-Proof Scenario
@@ -29,17 +30,22 @@ export class CredentialProofDemo {
 
     // STEP 1: Agent proves credential access in TEE
     console.log('STEP 1: Agent accesses credentials in TEE');
-    
-    // In real implementation, Lit Protocol provides encrypted credentials
-    // The agent accesses them inside TEE, proves access without exposing keys
-    
+
+    // store a dummy api key in the Lit vault for this demo
+    const vaultEntry = await storeCredential(
+      `${serviceName}-api-key`,
+      `sk-demo-${serviceName}-key-not-real`
+    );
+    console.log('  Credential stored in Lit vault for:', vaultEntry.name);
+
     const credentialInput: TEEInput = {
       taskId: proofId,
       agentId: this.agent.getAgentId(),
       nonce: 1,
       onChainState: {
         litProtocol: {
-          credentialVault: 'storacha://vault/credentials',
+          credentialVault: vaultEntry.name,
+          ownerAddress: vaultEntry.ownerAddress,
           accessConditions: {
             service: serviceName,
             permission: requiredPermission,
@@ -49,7 +55,7 @@ export class CredentialProofDemo {
       },
       externalData: {
         credentialProof: 'lit-access-granted',
-        credentialHash: '0x' + 'a'.repeat(64), // Hash of actual cred (not exposed)
+        credentialHash: vaultEntry.dataToEncryptHash,
         serviceEndpoint: `https://api.${serviceName}.com/v1`
       },
       timestamp: Date.now()
@@ -103,28 +109,26 @@ Output JSON with:
     console.log('  Access proof generated');
     console.log('  Can call service with proof instead of API key');
 
-    // STEP 3: Lit Protocol conditions for reveal
-    console.log('\nSTEP 3: Lit Protocol access conditions');
-    
+    // Seal reasoning blob + lit conditions
+    console.log('\nSTEP 3: Seal blob + Lit Protocol access conditions');
+    const sealed = await sealBlob(reasoning.reasoningBlob, commitment.merkleRoot);
+    console.log('  Reasoning blob pinned to Filecoin:', sealed.cid);
+
     const litConditions = {
-      chain: 'ethereum',
-      method: 'eth_getBalance',
-      params: [':userAddress', 'latest'],
-      returnValueTest: {
-        comparator: '>=',
-        value: '0'
-      },
-      // Additional conditions for credential reveal
-      revealConditions: {
-        authorizedStakers: ['0xStaker1', '0xStaker2'],
-        authorizedAuditors: ['0xRegulator'],
-        multisigThreshold: 2,
-        timelockHours: 24
+      chain: 'baseSepolia',
+      cid: sealed.cid,
+      url: sealed.url,
+      encryptedKey: sealed.encryptedKey,
+      iv: sealed.iv,
+      accessCondition: 'isRegisteredStaker — only stakers can reveal reasoning blob',
+      vaultEntry: {
+        name: vaultEntry.name,
+        ownerAddress: vaultEntry.ownerAddress,
+        dataToEncryptHash: vaultEntry.dataToEncryptHash
       }
     };
 
-    console.log('  Lit conditions set');
-    console.log('  Stakers can request reveal with multisig');
+    console.log('  Lit conditions set — stakers can request reveal via /api/reveal');
 
     console.log('\n=== Credential-Proof Demo Complete ===');
     console.log('Proof ID:', proofId);
