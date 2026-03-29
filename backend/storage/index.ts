@@ -17,10 +17,12 @@ export async function sealBlob(
 }> {
   const { pinBlob } = await import("./filecoin.js");
   const { encryptBlob, encryptBlobKey } = await import("./lit.js");
+  const { ethers } = await import("ethers");
+  const ownerAddress = new ethers.Wallet(process.env.SIGNER_PRIVATE_KEY!).address;
   const { encrypted, key, iv } = encryptBlob(reasoningBlob);
   const [pinResult, encryptedKey] = await Promise.all([
     pinBlob(encrypted, commitmentHash),
-    encryptBlobKey(key),
+    encryptBlobKey(key, ownerAddress),
   ]);
 
   return {

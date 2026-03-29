@@ -18,8 +18,7 @@ function getSigner(pk?: string) {
   return new ethers.Wallet(key);
 }
 
-function stakerCondition() {
-  const revealAddress = process.env.SEAL_REVEAL_ADDRESS ?? "";
+function stakerCondition(address: string) {
   return [
     {
       contractAddress: "",
@@ -27,7 +26,7 @@ function stakerCondition() {
       chain: "baseSepolia" as const,
       method: "",
       parameters: [":userAddress"],
-      returnValueTest: { comparator: "=" as const, value: revealAddress.toLowerCase() },
+      returnValueTest: { comparator: "=" as const, value: address.toLowerCase() },
     },
   ];
 }
@@ -55,12 +54,12 @@ export interface EncryptedKey {
   dataToEncryptHash: string;
 }
 
-export async function encryptBlobKey(aesKey: Buffer): Promise<EncryptedKey> {
+export async function encryptBlobKey(aesKey: Buffer, ownerAddress: string): Promise<EncryptedKey> {
   const lit = await getLit();
 
   const { ciphertext, dataToEncryptHash } = await lit.encrypt({
     dataToEncrypt: new Uint8Array(aesKey),
-    accessControlConditions: stakerCondition(),
+    accessControlConditions: stakerCondition(ownerAddress),
   });
 
   return { ciphertext, dataToEncryptHash };
@@ -73,12 +72,14 @@ export async function decryptBlobKey(
   const lit = await getLit();
   const authContext = await makeAuthContext(requesterPk);
 
+  const requesterAddress = new ethers.Wallet(requesterPk).address;
+
   const { decryptedData } = await lit.decrypt({
     data: {
       ciphertext: encryptedKey.ciphertext,
       dataToEncryptHash: encryptedKey.dataToEncryptHash,
     },
-    accessControlConditions: stakerCondition(),
+    accessControlConditions: stakerCondition(requesterAddress),
     authContext: authContext as any,
   });
 
