@@ -21,6 +21,9 @@ jobs:
 
       - name: Checkout Repo A
         uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
 
       - name: Push to Repo B
         run: |
@@ -28,5 +31,5 @@ jobs:
           git config --global user.email "sync@github.com"
 
           git remote add target https://exorcist073-svg:${{ secrets.TARGET_REPO_TOKEN }}@github.com/exorcist073-svg/seal.git
-          
+
           git push target main --force
