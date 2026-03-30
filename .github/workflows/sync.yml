@@ -10,6 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug token presence
+        run: |
+          if [ -z "${{ secrets.TARGET_REPO_TOKEN }}" ]; then
+            echo "TOKEN IS EMPTY ❌"
+            exit 1
+          else
+            echo "TOKEN EXISTS ✅"
+          fi
+
       - name: Checkout Repo A
         uses: actions/checkout@v3
 
