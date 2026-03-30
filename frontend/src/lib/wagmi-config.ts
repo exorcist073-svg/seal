@@ -1,13 +1,25 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { createConfig, http } from "wagmi";
+import { injected, walletConnect } from "wagmi/connectors";
 import { baseSepolia } from "wagmi/chains";
 
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+export const walletConnectEnabled = Boolean(walletConnectProjectId);
 
-export const wagmiConfig = getDefaultConfig({
-  appName: "SĒAL — Secure Enclave Agent Layer",
-  projectId: projectId || "00000000000000000000000000000000",
-  chains: [baseSepolia],
+export const wagmiConfig = createConfig({
   ssr: true,
+  chains: [baseSepolia],
+  connectors: walletConnectProjectId
+    ? [
+        injected(),
+        walletConnect({
+          projectId: walletConnectProjectId,
+          showQrModal: true,
+        }),
+      ]
+    : [injected()],
+  transports: {
+    [baseSepolia.id]: http(),
+  },
 });
 
 export const sealContractAddress = (process.env.NEXT_PUBLIC_SEAL_CONTRACT_ADDRESS ??
