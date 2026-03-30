@@ -30,8 +30,8 @@ export function SiteHeader() {
         </nav>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ConnectButton chainStatus="icon" showBalance={false} />
-          <a href="#reveal" className="seal-badge !px-3 !py-2 !tracking-normal">
-            ✎
+          <a href="/dashboard" className="seal-badge !px-3 !py-2 !tracking-normal">
+            Dashboard
           </a>
         </div>
       </div>
