@@ -3,6 +3,7 @@ import { nagaDev } from "@lit-protocol/networks";
 import { generateSessionKeyPair } from "@lit-protocol/crypto";
 import { ethers } from "ethers";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { LIT_ABILITY } from "@lit-protocol/constants";
 
 let litClient: Awaited<ReturnType<typeof createLitClient>> | null = null;
 
@@ -34,19 +35,40 @@ function stakerCondition(address: string) {
 async function makeAuthContext(signerPk?: string) {
   const signer = getSigner(signerPk);
   const sessionKeyPair = generateSessionKeyPair();
+
   const msg = `SEAL auth: ${Date.now()}`;
   const sig = await signer.signMessage(msg);
 
+  const { LitAccessControlConditionResource } = await import("@lit-protocol/auth-helpers");
+  const { LIT_ABILITY } = await import("@lit-protocol/constants");
+
+  const authCallback = async () => ({
+    sig,
+    derivedVia: "web3.eth.personal.sign",
+    signedMessage: msg,
+    address: signer.address,
+  });
+
+  const authInfo = await authCallback();
+
   return {
-    chain: "baseSepolia",
+    chain: "baseSepolia" as const,
     sessionKeyPair,
-    authNeededCallback: async () => ({
-      sig,
-      derivedVia: "ethers",
-      signedMessage: msg,
-      address: signer.address,
-    }),
-  };
+    authNeededCallback: authCallback,
+    authConfig: {
+      capabilityAuthSigs: [authInfo],
+      expiration: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+      statement: "SEAL Protocol Access",
+      domain: "seal-protocol.io",
+      resources: [{ resource: "*", ability: "decryption" }],
+    },
+    resourceAbilityRequests: [
+      {
+        resource: new LitAccessControlConditionResource("*"),
+        ability: LIT_ABILITY.AccessControlConditionDecryption,
+      },
+    ],
+  } as any;
 }
 
 export interface EncryptedKey {
@@ -81,7 +103,7 @@ export async function decryptBlobKey(
     },
     accessControlConditions: stakerCondition(requesterAddress),
     authContext: authContext as any,
-  });
+  } as any);
 
   return Buffer.from(decryptedData);
 }
