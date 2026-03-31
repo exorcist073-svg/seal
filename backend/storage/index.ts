@@ -51,11 +51,16 @@ export async function revealBlob(
   let lastErr: Error | null = null;
   for (const url of gateways) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-      if (!res.ok) { lastErr = new Error(`${url}: ${res.statusText}`); continue; }
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) { clearTimeout(timeout); lastErr = new Error(`${url}: ${res.statusText}`); continue; }
       const bytes = Buffer.from(await res.arrayBuffer());
+      clearTimeout(timeout);
+      console.log(`[revealBlob] Fetched ${bytes.length} bytes from ${url}`);
       return decryptBlob(bytes, key, Buffer.from(iv, "hex"));
     } catch (e: any) {
+      console.error(`[revealBlob] Gateway ${url} failed:`, e.message);
       lastErr = e;
     }
   }
