@@ -2,34 +2,35 @@ import { ScrollReveal } from "./ScrollReveal";
 
 export function ManifestoSection() {
   return (
-    <section className="border-y border-neutral-300 bg-[#f5f5f0] py-[120px] md:py-[140px]">
+    <section className="border-y border-neutral-300 bg-[#f5f5f0] py-[84px] md:py-[104px]">
       <div className="mx-auto max-w-[1440px] px-6">
-        <ScrollReveal>
-          <p className="mx-auto max-w-[980px] text-center text-[clamp(28px,4vw,48px)] font-semibold leading-tight tracking-[-0.02em] text-[#05058a]">
-            SEAL is the commit–attest–execute–deliver layer for AI agents — protecting
-            the full decision–action chain with verifiable, private-by-default behavior
-            on-chain.
-          </p>
-        </ScrollReveal>
+        <div className="grid gap-10 md:grid-cols-12 md:gap-16 lg:gap-20">
+          <div className="md:col-span-7">
+            <div className="grid gap-8 md:gap-10">
+              <ScrollReveal delayMs={80}>
+                <p className="text-[15px] font-light leading-[1.9] text-neutral-700 sm:text-base">
+                  Today’s agents can move money, ship code, approve access, and trigger irreversible actions — but their
+                  decision-making is mostly opaque. When something goes wrong, you get logs after the fact, unverifiable
+                  claims, and no clean way to separate honest mistakes from manipulation.
+                </p>
+              </ScrollReveal>
+              <ScrollReveal delayMs={160}>
+                <p className="text-[15px] font-light leading-[1.9] text-neutral-700 sm:text-base">
+                  The missing primitive is accountability without surveillance: prove an agent committed to a decision
+                  before acting, keep strategy private by default, and enable verified investigation only when it
+                  matters.
+                </p>
+              </ScrollReveal>
+            </div>
+          </div>
 
-        <div className="mt-16 grid gap-12 md:grid-cols-2 md:gap-16 lg:mt-24">
-          <ScrollReveal delayMs={80}>
-            <p className="text-base font-light leading-[1.8] text-neutral-700">
-              AI agents are autonomous economic actors. SEAL gives any system running
-              agents a single integration point: attest inputs, reason in a TEE, commit
-              before execution, guarantee delivery, and reveal selectively to authorized
-              parties.
-            </p>
-          </ScrollReveal>
-          <ScrollReveal delayMs={160}>
-            <p className="text-base font-light leading-[1.8] text-neutral-700">
-              The architecture is simple to state:{" "}
-              <span className="font-semibold text-[#05058a]">
-                reason privately, commit publicly, reveal selectively.
-              </span>{" "}
-              Enforcement lives in the smart contract — no commitment, no execution.
-            </p>
-          </ScrollReveal>
+          <div className="md:col-span-5 md:flex md:justify-end">
+            <ScrollReveal>
+              <p className="text-left text-[clamp(28px,2.8vw,56px)] font-semibold leading-[1.05] tracking-[-0.03em] text-[#05058a]">
+                Reason privately, commit publicly, reveal selectively.
+              </p>
+            </ScrollReveal>
+          </div>
         </div>
       </div>
     </section>

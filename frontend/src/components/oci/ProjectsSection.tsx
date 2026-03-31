@@ -6,26 +6,36 @@ const USE_CASES = [
     name: "DAO treasury",
     category: "Governance",
     src: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=900&q=80",
+    hover:
+      "In DAO treasury automation, it’s hard to prove why a transaction happened before funds move. With SEAL, treasury risk becomes controllable: actions are enforced by policy, and disputes can be investigated without exposing everything by default.",
   },
   {
     name: "Agent-to-agent",
     category: "Coordination",
     src: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=900&q=80",
+    hover:
+      "In agent-to-agent coordination, there’s no reliable way to know a worker didn’t fabricate an answer. With SEAL, collaboration is safer: risky tasks can be constrained, misbehavior becomes provable, and escalation paths are built in.",
   },
   {
     name: "Regulated deployments",
     category: "Audit",
     src: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&q=80",
+    hover:
+      "In regulated workflows, you need audit evidence without exposing strategy to everyone. With SEAL, you can satisfy audits with a tight trail of evidence, while keeping sensitive logic private unless an authorized review is triggered.",
   },
   {
     name: "Autonomous trading",
     category: "Finance",
-    src: "https://images.unsplash.com/photo-1611974789855-9c2a0a4756a3?w=900&q=80",
+    src: "https://images.unsplash.com/photo-1535320903710-d993d3d77d29?w=900&q=80",
+    hover:
+      "In autonomous trading, proving fairness usually means leaking alpha. With SEAL, you can demonstrate integrity after the fact without giving away live strategy, and contain fallout when a trade is questioned.",
   },
   {
     name: "Credential-proof workflows",
     category: "Access",
     src: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=900&q=80",
+    hover:
+      "In credential-proof access flows, approvals often boil down to trust and screenshots. With SEAL, approvals become enforceable and auditable: decisions can be reviewed with evidence, without leaking private credentials.",
   },
 ];
 
@@ -56,6 +66,11 @@ export function ProjectsSection() {
                   className="absolute inset-0 h-full w-full origin-center transition-transform duration-300 ease-in-out group-hover:scale-[1.03]"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-[#040482]/0 mix-blend-multiply transition-colors duration-300 ease-in-out group-hover:bg-[#040482]/45" />
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-7 text-center opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+                  <p className="max-w-[28ch] text-balance text-sm font-medium leading-snug text-white">
+                    {p.hover}
+                  </p>
+                </div>
                 <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
                   <p className="text-[11px] uppercase tracking-[0.2em] text-white/80">
                     {p.category}

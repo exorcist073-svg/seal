@@ -24,31 +24,58 @@ export function AboutStatsSection() {
           </ScrollReveal>
 
           <div>
-            <div className="grid gap-10 sm:grid-cols-3">
-              {[
-                { stat: "06", label: "Pipeline stages" },
-                { stat: "TEE", label: "Confidential runtime" },
-                { stat: "2026", label: "PL Genesis" },
-              ].map((item, i) => (
-                <ScrollReveal key={item.label} delayMs={i * 50}>
-                  <div>
-                    <p className="text-[clamp(36px,5vw,64px)] font-black leading-none tracking-[-0.02em]">
-                      {item.stat}
-                    </p>
-                    <p className="mt-3 text-[11px] font-light uppercase tracking-[0.25em] text-white/70">
-                      {item.label}
-                    </p>
-                  </div>
-                </ScrollReveal>
-              ))}
+            <div className="grid gap-10 lg:gap-12">
+              <ScrollReveal>
+                <div>
+                  <p className="text-[clamp(56px,7.5vw,96px)] font-black leading-[0.92] tracking-[-0.03em]">
+                    Anywhere.
+                    <span className="block">Anytime.</span>
+                  </p>
+                </div>
+              </ScrollReveal>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                {[
+                  {
+                    title: "Anywhere",
+                    desc: "DAOs, marketplaces, desks, and workflows — wherever agents touch value.",
+                  },
+                  {
+                    title: "Anytime",
+                    desc: "When stakes are high: adversarial markets, regulated flows, or automated ops.",
+                  },
+                  {
+                    title: "On-chain + off-chain",
+                    desc: "Works with contracts, relayers, and real systems — not just demos.",
+                  },
+                  {
+                    title: "Privacy-first",
+                    desc: "Share evidence when needed, not all the time.",
+                  },
+                ].map((item, i) => (
+                  <ScrollReveal key={item.title} delayMs={60 + i * 40}>
+                    <div className="border-t border-white/25 pt-5">
+                      <p className="text-xs font-semibold tracking-[-0.01em] text-white">
+                        {item.title}
+                      </p>
+                      <p className="mt-3 text-sm font-light leading-relaxed text-white/80">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </ScrollReveal>
+                ))}
+              </div>
             </div>
 
             <ScrollReveal delayMs={120} className="mt-12">
               <p className="text-base font-light leading-[1.8] text-white/85">
-                SEAL unifies TEE execution, on-chain commitment, encrypted storage, and
-                Lit-gated reveal — so agents can be held accountable without exposing
-                strategy to the world in real time. Infrastructure, not an app: one
-                integration surface for any agent-powered system.
+                Use SEAL wherever an agent can cause real-world impact: moving funds, changing state, approving access,
+                signing, or triggering irreversible actions.
+                <span className="block mt-4 text-white/75">
+                  Use it when you need verifiability and controlled execution: prove what happened after the fact, and
+                  ensure actions follow the agent’s decision path — without leaking strategy in real time. Ideal for
+                  regulated flows, high-stakes automation, adversarial markets, and agent marketplaces.
+                </span>
               </p>
             </ScrollReveal>
           </div>

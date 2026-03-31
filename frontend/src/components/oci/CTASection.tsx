@@ -54,10 +54,6 @@ export function CTASection() {
                 Thanks — you&apos;re on the list.
               </p>
             ) : null}
-
-            <p className="mt-14 text-[11px] uppercase tracking-[0.28em] text-white/75">
-              PL Genesis · March 2026 · Hackathon track: AI agents for Web3
-            </p>
           </div>
         </ScrollReveal>
       </div>
