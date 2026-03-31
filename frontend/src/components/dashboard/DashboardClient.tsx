@@ -7,6 +7,7 @@ import { baseSepolia } from "wagmi/chains";
 import { formatEther, isAddress, keccak256, stringToBytes } from "viem";
 import { sealAbi } from "@/lib/seal-abi";
 import { sealApiBase, sealContractAddress } from "@/lib/wagmi-config";
+import { OperatorsPanel } from "./operators";
 
 type RevealResult = { plaintext: string; cid: string } | null;
 

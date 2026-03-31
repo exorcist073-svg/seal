@@ -32,6 +32,47 @@ function stakerCondition(address: string) {
   ];
 }
 
+async function makeAuthContext(signerPk?: string) {
+  const signer = getSigner(signerPk);
+  const sessionKeyPair = generateSessionKeyPair();
+
+  const expiration = new Date(Date.now() + 1000 * 60 * 60).toISOString();
+  const msg = `SEAL auth: ${Date.now()}|exp:${expiration}`;
+  const sig = await signer.signMessage(msg);
+
+  const { LitAccessControlConditionResource } = await import("@lit-protocol/auth-helpers");
+  const { LIT_ABILITY } = await import("@lit-protocol/constants");
+
+  const authCallback = async () => ({
+    sig,
+    derivedVia: "web3.eth.personal.sign",
+    signedMessage: msg,
+    address: signer.address,
+  });
+
+  const authInfo = await authCallback();
+  const resource = new LitAccessControlConditionResource("*");
+
+  return {
+    chain: "baseSepolia" as const,
+    sessionKeyPair,
+    authNeededCallback: authCallback,
+    authConfig: {
+      capabilityAuthSigs: [authInfo],
+      expiration: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+      statement: "SEAL Protocol Access",
+      domain: "seal-protocol.io",
+      resources: [{ resource, ability: LIT_ABILITY.AccessControlConditionDecryption }],
+    },
+    resourceAbilityRequests: [
+      {
+        resource,
+        ability: LIT_ABILITY.AccessControlConditionDecryption,
+      },
+    ],
+  } as any;
+}
+
 export interface EncryptedKey {
   ciphertext: string;
   dataToEncryptHash: string;
@@ -55,53 +96,18 @@ export async function decryptBlobKey(
   const lit = await getLit();
   const signer = getSigner(requesterPk);
   const sessionKeyPair = generateSessionKeyPair();
+
   const requesterAddress = signer.address;
 
-  const { LitAccessControlConditionResource, createSiweMessageWithResources } =
-    await import("@lit-protocol/auth-helpers");
-
-  // Resource ID = hash(accessControlConditions) + "/" + dataToEncryptHash
-  const accs = stakerCondition(requesterAddress);
-  const resourceId = await LitAccessControlConditionResource.generateResourceString(
-    accs,
-    encryptedKey.dataToEncryptHash
-  );
-  const resource = new LitAccessControlConditionResource(resourceId);
-
-  // authNeededCallback: SDK calls this to get a capability AuthSig
-  // Must return an AuthSig whose signedMessage is a SIWE string with ReCap + Expiration Time
-  const authNeededCallback = async () => {
-    const siweMessage = await createSiweMessageWithResources({
-      uri: `lit:session:${sessionKeyPair.publicKey}`,
-      walletAddress: signer.address,
-      nonce: randomBytes(16).toString("hex"),
-      chainId: 84532,
-      expiration: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
-      resources: [
-        { resource, ability: LIT_ABILITY.AccessControlConditionDecryption },
-      ],
-    });
-
-    const sig = await signer.signMessage(siweMessage);
+  const authCallback = async () => {
+    const msg = `localhost wants you to sign in with your Ethereum account:\n${signer.address}\n\nURI: http://localhost\nVersion: 1\nChain ID: 84532\nNonce: ${Date.now()}\nIssued At: ${new Date().toISOString()}\nExpiration Time: ${new Date(Date.now() + 3600000).toISOString()}`;
+    const sig = await signer.signMessage(msg);
     return {
       sig,
       derivedVia: "web3.eth.personal.sign",
-      signedMessage: siweMessage,
+      signedMessage: msg,
       address: signer.address,
     };
-  };
-
-  // PKPAuthContextSchema: { chain, sessionKeyPair, authNeededCallback, authConfig }
-  // AuthConfigSchema fields all have defaults, but resources must match
-  const authContext = {
-    chain: "baseSepolia",
-    sessionKeyPair,
-    authNeededCallback,
-    authConfig: {
-      resources: [
-        { resource, ability: LIT_ABILITY.AccessControlConditionDecryption },
-      ],
-    },
   };
 
   const { decryptedData } = await lit.decrypt({
@@ -110,7 +116,11 @@ export async function decryptBlobKey(
       dataToEncryptHash: encryptedKey.dataToEncryptHash,
     },
     accessControlConditions: stakerCondition(requesterAddress),
-    authContext,
+    authContext: {
+      chain: "baseSepolia",
+      sessionKeyPair,
+      authNeededCallback: authCallback,
+    } as any,
   } as any);
 
   return Buffer.from(decryptedData);
