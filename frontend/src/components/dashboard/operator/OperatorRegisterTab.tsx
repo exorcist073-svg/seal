@@ -87,12 +87,12 @@ export function OperatorRegisterTab({
     try {
       return parseEther(stakeEth || "0");
     } catch {
-      return 0n;
+      return BigInt(0);
     }
   }, [stakeEth]);
 
   const stakeMeetsMin =
-    minStakeWei !== undefined && stakeWei >= minStakeWei && stakeWei > 0n;
+    minStakeWei !== undefined && stakeWei >= minStakeWei && stakeWei > BigInt(0);
 
   const registerBlockers = useMemo(() => {
     const lines: string[] = [];
@@ -194,19 +194,15 @@ export function OperatorRegisterTab({
           <p className="text-[11px] uppercase tracking-[0.22em] text-[#05058a]/65">
             Register agent
           </p>
-          <p className="mt-2 text-sm text-[#05058a]/70">
-            Six-step wizard: connect wallet, profile, runtime hash, stake, allowlist, then register on-chain.
-          </p>
-
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 flex w-full gap-2">
             {([1, 2, 3, 4, 5, 6] as const).map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => setWizardStep(n)}
-                className={`border px-3 py-2 text-[11px] uppercase tracking-[0.18em] ${
+                className={`min-w-0 flex-1 border px-2 py-2.5 text-center text-[10px] uppercase tracking-[0.14em] sm:text-[11px] sm:tracking-[0.18em] ${
                   wizardStep === n
-                    ? "border-[#05058a] bg-white text-[#05058a]"
+                    ? "border-[#05058a] bg-[#05058a] text-white"
                     : "border-[#05058a]/15 bg-[#f5f5f0] text-[#05058a]/70 hover:bg-white"
                 }`}
               >
@@ -516,15 +512,13 @@ export function OperatorRegisterTab({
                       ? "Confirm in wallet…"
                       : "Register agent (stake)"}
                 </button>
-                <p className="text-xs text-[#05058a]/65">
-                  Backend links to this agent via the same agent id + runtime hash when you run the pipeline (
-                  <span className="font-mono">NEXT_PUBLIC_SEAL_API_URL</span>).
-                </p>
               </div>
             ) : null}
           </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3">
+          <div
+            className={`mt-4 flex items-center gap-3 ${wizardStep === 6 ? "justify-start" : "justify-between"}`}
+          >
             <button
               type="button"
               onClick={back}
@@ -533,21 +527,22 @@ export function OperatorRegisterTab({
             >
               Back
             </button>
-            <button
-              type="button"
-              onClick={next}
-              className="bg-[#05058a] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-              disabled={
-                (wizardStep === 1 && !canNextStep1) ||
-                (wizardStep === 2 && !canNextStep2) ||
-                (wizardStep === 3 && !canNextStep3) ||
-                (wizardStep === 4 && !canNextStep4) ||
-                (wizardStep === 5 && !canNextStep5) ||
-                wizardStep === 6
-              }
-            >
-              Next
-            </button>
+            {wizardStep < 6 ? (
+              <button
+                type="button"
+                onClick={next}
+                className="bg-[#05058a] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                disabled={
+                  (wizardStep === 1 && !canNextStep1) ||
+                  (wizardStep === 2 && !canNextStep2) ||
+                  (wizardStep === 3 && !canNextStep3) ||
+                  (wizardStep === 4 && !canNextStep4) ||
+                  (wizardStep === 5 && !canNextStep5)
+                }
+              >
+                Next
+              </button>
+            ) : null}
           </div>
         </div>
       </section>

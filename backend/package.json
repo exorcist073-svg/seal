@@ -7,7 +7,10 @@
     "start": "tsx src/server.ts",
     "demo": "tsx index.ts",
     "test": "vitest",
-    "pipeline:onchain": "node scripts/run-pipeline-onchain.mjs"
+    "pipeline:onchain": "node scripts/run-pipeline-onchain.mjs",
+    "storacha:setup": "node scripts/storacha-setup.mjs",
+    "test:lit": "tsx scripts/test-lit.ts",
+    "test:storage": "tsx scripts/test-storage.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

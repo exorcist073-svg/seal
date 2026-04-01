@@ -35,7 +35,7 @@ export const sealContractAddress = (process.env.NEXT_PUBLIC_SEAL_CONTRACT_ADDRES
 
 /**
  * Backend base URL for `fetch`. If unset, use same-origin paths (`/api/...`, `/health`) so Next.js
- * rewrites (see `next.config.ts`) can proxy to the real API — avoids port mismatches (3010 vs 3001).
+ * rewrites (see `next.config.ts`) can proxy to the real API — default proxy target matches backend PORT (3001).
  * Set `NEXT_PUBLIC_SEAL_API_URL` only when you need a direct absolute URL (e.g. API on another host).
  */
 export const sealApiBase = (

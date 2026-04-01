@@ -13,7 +13,7 @@ import type { Address } from 'viem';
 import { appendSealedBlob, sealedForAgent } from './sealed-blobs.js';
 import { readAuditRequests, writeAuditRequests } from './audit-requests-store.js';
 import type { AuditRequestRecord } from './audit/audit-types.js';
-import { buildAuditRequestMessage, buildDenyMessage } from './audit/audit-types.js';
+import { buildAuditRequestMessage, buildDenyMessage, buildRevealSubmitMessage } from './audit/audit-types.js';
 
 const app = express();
 app.use(cors());
@@ -355,14 +355,19 @@ app.get('/api/agents/:agentIdHex', async (req, res) => {
 app.get('/api/chain/registered-agents', async (_req, res) => {
   if (!sealContractReader) return res.status(503).json({ error: 'On-chain not configured' });
   try {
-    const count = await sealContractReader.registeredAgentCount();
-    const n = Number(count);
-    const agents: string[] = [];
-    for (let i = 0; i < n; i++) {
-      const id = await sealContractReader.registeredAgentAt(i);
-      agents.push(String(id));
+    let agents: string[] = [];
+    try {
+      const arr = await sealContractReader.getRegisteredAgents();
+      agents = Array.isArray(arr) ? arr.map((id: unknown) => String(id)) : [];
+    } catch {
+      const count = await sealContractReader.registeredAgentCount();
+      const n = Number(count);
+      for (let i = 0; i < n; i++) {
+        const id = await sealContractReader.registeredAgentAt(i);
+        agents.push(String(id));
+      }
     }
-    res.json({ agents, count: n });
+    res.json({ agents, count: agents.length });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -518,6 +523,94 @@ app.post('/api/audit-requests/:id/reveal', async (req, res) => {
       commitmentHash: reqRow.id,
       timestamp: Date.now(),
       metadata: { auditor: reqRow.auditorAddress, auditRequestId: id },
+    });
+
+    res.json({ ok: true, request: list[idx] });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** Sealed blob refs for client-side Lit decrypt (same rows as server-side reveal). */
+app.get('/api/audit-requests/:id/sealed-blobs', async (req, res) => {
+  try {
+    const operator = req.query.operator as string | undefined;
+    if (!operator?.trim() || !ethers.isAddress(operator)) {
+      return res.status(400).json({ error: 'operator query param must be a valid address' });
+    }
+    const id = req.params.id;
+    const list = readAuditRequests();
+    const reqRow = list.find((r) => r.id === id);
+    if (!reqRow) return res.status(404).json({ error: 'request not found' });
+    if (reqRow.status !== 'pending') {
+      return res.status(400).json({ error: `request is ${reqRow.status}` });
+    }
+    if (!sealContractReader) return res.status(503).json({ error: 'On-chain not configured' });
+
+    const agentRow = await sealContractReader.agents(reqRow.agentIdBytes32 as `0x${string}`);
+    const agentOwner = String(agentRow[4]);
+    if (operator.toLowerCase() !== agentOwner.toLowerCase()) {
+      return res.status(403).json({ error: 'operator must be the on-chain agent owner' });
+    }
+
+    const blobs = sealedForAgent(reqRow.agentIdBytes32);
+    res.json({ blobs });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** Persist reveal after client-side decrypt; signature binds owner to plaintext hash. */
+app.post('/api/audit-requests/:id/reveal-submit', async (req, res) => {
+  try {
+    const { plaintext, signature } = req.body as { plaintext?: string; signature?: string };
+    if (typeof plaintext !== 'string' || !signature?.trim()) {
+      return res.status(400).json({ error: 'plaintext and signature are required' });
+    }
+    const id = req.params.id;
+    const list = readAuditRequests();
+    const idx = list.findIndex((r) => r.id === id);
+    if (idx === -1) return res.status(404).json({ error: 'request not found' });
+    const reqRow = list[idx];
+    if (reqRow.status !== 'pending') {
+      return res.status(400).json({ error: `request is ${reqRow.status}` });
+    }
+    if (!sealContractReader) return res.status(503).json({ error: 'On-chain not configured' });
+
+    const agentRow = await sealContractReader.agents(reqRow.agentIdBytes32 as `0x${string}`);
+    const agentOwner = String(agentRow[4]);
+
+    const plaintextKeccak256 = ethers.keccak256(ethers.toUtf8Bytes(plaintext));
+    const msg = buildRevealSubmitMessage(
+      id,
+      reqRow.agentIdBytes32,
+      reqRow.auditorAddress,
+      plaintextKeccak256,
+    );
+    let recovered: string;
+    try {
+      recovered = ethers.verifyMessage(msg, signature);
+    } catch {
+      return res.status(400).json({ error: 'invalid signature' });
+    }
+    if (recovered.toLowerCase() !== agentOwner.toLowerCase()) {
+      return res.status(403).json({ error: 'signature must be from agent owner' });
+    }
+
+    list[idx] = {
+      ...reqRow,
+      status: 'revealed',
+      revealedPlaintext: plaintext,
+      revealedAt: new Date().toISOString(),
+    };
+    writeAuditRequests(list);
+
+    await logAuditEntry({
+      event: 'reveal',
+      agentId: reqRow.agentIdBytes32,
+      commitmentHash: reqRow.id,
+      timestamp: Date.now(),
+      metadata: { auditor: reqRow.auditorAddress, auditRequestId: id, via: 'wallet-submit' },
     });
 
     res.json({ ok: true, request: list[idx] });
@@ -835,7 +928,7 @@ app.get('/api/chain/dispute/:disputeId', async (req, res) => {
   }
 });
 
-// Selective reveal, call this from the reveal ui with the requester's private key
+// Selective reveal: requesterPk must be the sealed blob owner's key — Lit decrypt signs a SIWE payload from that address.
 app.post('/api/reveal', async (req, res) => {
   try {
     const { cid, encryptedKey, iv, requesterPk } = req.body;
@@ -907,7 +1000,9 @@ app.listen(PORT, () => {
   console.log(`     GET  /api/chain/registered-agents`);
   console.log(`     POST /api/audit-requests`);
   console.log(`     GET  /api/audit-requests`);
+  console.log(`     GET  /api/audit-requests/:id/sealed-blobs`);
   console.log(`     POST /api/audit-requests/:id/reveal`);
+  console.log(`     POST /api/audit-requests/:id/reveal-submit`);
   console.log(`     POST /api/audit-requests/:id/deny`);
   console.log(`     GET  /api/agents/:agentIdHex\n`);
 });

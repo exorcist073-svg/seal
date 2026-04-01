@@ -23,6 +23,9 @@ Thumbs.db
 # Local audit / sealed persistence (dev)
 data/
 
+# Storacha UCAN / keys (use STORACHA_PROOF_FILE etc.)
+.storacha/
+
 # Build artifacts
 *.js
 *.d.ts

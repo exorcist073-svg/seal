@@ -1,13 +1,13 @@
 import { createLitClient } from "@lit-protocol/lit-client";
-import { nagaTest } from "@lit-protocol/networks";
-import { generateSessionKeyPair } from "@lit-protocol/crypto";
+import { resolveLitNetwork } from "./lit-network.js";
+import { litDecryptAuthContext } from "./lit.js";
 import { ethers } from "ethers";
 
 let litClient: Awaited<ReturnType<typeof createLitClient>> | null = null;
 
 async function getLit() {
   if (litClient) return litClient;
-  litClient = await createLitClient({ network: nagaTest });
+  litClient = await createLitClient({ network: resolveLitNetwork() });
   return litClient;
 }
 
@@ -28,24 +28,6 @@ function ownerCondition(address: string) {
       returnValueTest: { comparator: "=" as const, value: address.toLowerCase() },
     },
   ];
-}
-
-async function makeAuthContext(signerPk?: string) {
-  const signer = getSigner(signerPk);
-  const sessionKeyPair = generateSessionKeyPair();
-  const msg = `SEAL vault auth: ${Date.now()}`;
-  const sig = await signer.signMessage(msg);
-
-  return {
-    chain: "sepolia",
-    sessionKeyPair,
-    authNeededCallback: async () => ({
-      sig,
-      derivedVia: "ethers",
-      signedMessage: msg,
-      address: signer.address,
-    }),
-  };
 }
 
 export interface VaultEntry {
@@ -73,14 +55,21 @@ export async function storeCredential(name: string, value: string): Promise<Vaul
 
 export async function getCredential(entry: VaultEntry): Promise<string> {
   const lit = await getLit();
-  const authContext = await makeAuthContext();
+  const authContext = await litDecryptAuthContext(
+    { ciphertext: entry.ciphertext, dataToEncryptHash: entry.dataToEncryptHash },
+    entry.ownerAddress
+  );
   const { decryptedData } = await lit.decrypt({
-    data: {
-      ciphertext: entry.ciphertext,
-      dataToEncryptHash: entry.dataToEncryptHash,
-    },
+    ciphertext: entry.ciphertext,
+    dataToEncryptHash: entry.dataToEncryptHash,
     accessControlConditions: ownerCondition(entry.ownerAddress),
-    authContext: authContext as any,
+    chain: "sepolia",
+    authContext: {
+      chain: authContext.chain,
+      sessionKeyPair: authContext.sessionKeyPair,
+      authNeededCallback: authContext.authNeededCallback,
+      authConfig: authContext.authConfig,
+    },
   });
 
   return Buffer.from(decryptedData).toString("utf8");

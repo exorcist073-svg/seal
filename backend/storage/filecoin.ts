@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import * as Client from "@web3-storage/w3up-client";
 import { StoreMemory } from "@web3-storage/w3up-client/stores/memory";
 import * as Proof from "@web3-storage/w3up-client/proof";
@@ -20,13 +21,32 @@ export interface PinResult {
 
 let storacha: Client.Client | null = null;
 
+/** Read one-line secret from env or from a UTF-8 file path (for long UCAN proofs). */
+function readEnvOrFile(value: string | undefined, filePath: string | undefined): string | undefined {
+  const direct = value?.trim();
+  if (direct) return direct;
+  const p = filePath?.trim();
+  if (!p) return undefined;
+  if (!fs.existsSync(p)) return undefined;
+  return fs.readFileSync(p, "utf8").trim();
+}
+
+/** True when sealed uploads can run (Storacha / w3up agent + space delegation). */
+export function hasStorachaCredentials(): boolean {
+  const key = readEnvOrFile(process.env.STORACHA_PRINCIPAL, process.env.STORACHA_PRINCIPAL_FILE);
+  const proof = readEnvOrFile(process.env.STORACHA_PROOF, process.env.STORACHA_PROOF_FILE);
+  return Boolean(key && proof);
+}
+
 async function getStoracha(): Promise<Client.Client> {
   if (storacha) return storacha;
-  const key = process.env.STORACHA_PRINCIPAL;
-  const proof = process.env.STORACHA_PROOF;
+  const key = readEnvOrFile(process.env.STORACHA_PRINCIPAL, process.env.STORACHA_PRINCIPAL_FILE);
+  const proof = readEnvOrFile(process.env.STORACHA_PROOF, process.env.STORACHA_PROOF_FILE);
 
   if (!key || !proof) {
-    throw new Error("STORACHA_PRINCIPAL and STORACHA_PROOF are required");
+    throw new Error(
+      "Set STORACHA_PRINCIPAL + STORACHA_PROOF (or STORACHA_*_FILE paths). See docs/operator-local.md — Storacha."
+    );
   }
 
   const principal = Signer.parse(key);

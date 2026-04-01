@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useSignMessage } from "wagmi";
 import { getAddress } from "viem";
+import { parseApiJson } from "@/lib/api-json";
 import { sealApiBase } from "@/lib/wagmi-config";
 import { buildAuditRequestMessage } from "@/lib/audit-message";
 
@@ -103,7 +104,7 @@ export function Auditors_Dash() {
         note: note.trim() || undefined,
       }),
     });
-    const j = (await res.json()) as { error?: string; request?: AuditRequest };
+    const j = await parseApiJson<{ error?: string; request?: AuditRequest }>(res);
     if (!res.ok) throw new Error(j.error || res.statusText);
     await fetchMine();
     if (j.request?.id) setSelectedId(j.request.id);

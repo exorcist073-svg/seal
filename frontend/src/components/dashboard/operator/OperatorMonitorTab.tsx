@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAccount, useChainId, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { parseApiJson } from "@/lib/api-json";
 import { expectedChain, sealApiBase, sealContractAddress, sealApiLabel } from "@/lib/wagmi-config";
 import { sealAbi } from "@/lib/seal-abi";
 import { computeAgentIdBytes32 } from "@/lib/agent-id";
@@ -77,7 +78,6 @@ export function OperatorMonitorTab(props: {
   const publicClient = usePublicClient({ chainId: expectedChain.id });
   const [manualRuntime, setManualRuntime] = useState("0x78b1f08cb045792f");
   const [pastedAgentId, setPastedAgentId] = useState("");
-  const [replaceAgentId, setReplaceAgentId] = useState("");
   const [summary, setSummary] = useState<AgentApiSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +85,8 @@ export function OperatorMonitorTab(props: {
   const [pipelineRunning, setPipelineRunning] = useState(false);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
   const [pipelineLastTx, setPipelineLastTx] = useState<{ commit: string; execute: string } | null>(null);
+  /** Set after a successful prepare+chain run: whether backend sealed reasoning (Storacha + Lit). */
+  const [pipelineSealHint, setPipelineSealHint] = useState<{ sealed: boolean; cid?: string } | null>(null);
   const [copiedAgentId, setCopiedAgentId] = useState(false);
   const [regAgents, setRegAgents] = useState<{ list: string[]; err: string | null } | null>(null);
   const [copiedRegId, setCopiedRegId] = useState<string | null>(null);
@@ -106,7 +108,7 @@ export function OperatorMonitorTab(props: {
     const id = encodeURIComponent(props.registeredAgent.agentIdBytes32);
     fetch(`${sealApiBase}/api/agents/${id}`)
       .then(async (r) => {
-        const j = await r.json().catch(() => ({}));
+        const j = await parseApiJson<AgentApiSummary & { error?: string }>(r);
         if (!r.ok) throw new Error(j.error || r.statusText || "fetch failed");
         return j as AgentApiSummary;
       })
@@ -133,9 +135,9 @@ export function OperatorMonitorTab(props: {
     let cancelled = false;
     fetch(`${sealApiBase}/api/chain/registered-agents`)
       .then(async (r) => {
-        const j = await r.json().catch(() => ({}));
+        const j = await parseApiJson<{ agents?: string[]; error?: string }>(r);
         if (!r.ok) throw new Error(j.error || r.statusText);
-        return j as { agents: string[] };
+        return j;
       })
       .then((j) => {
         if (!cancelled) setRegAgents({ list: j.agents ?? [], err: null });
@@ -191,6 +193,7 @@ export function OperatorMonitorTab(props: {
     setPipelineRunning(true);
     setPipelineError(null);
     setPipelineLastTx(null);
+    setPipelineSealHint(null);
     try {
       if (chainId !== expectedChain.id) {
         await switchChainAsync?.({ chainId: expectedChain.id });
@@ -215,6 +218,12 @@ export function OperatorMonitorTab(props: {
       });
       const j = (await res.json().catch(() => ({}))) as {
         error?: string;
+        sealed?: {
+          cid: string;
+          url?: string;
+          iv: string;
+          encryptedKey: { ciphertext: string; dataToEncryptHash: string };
+        } | null;
         onChainPrepared?: {
           agentId: `0x${string}`;
           submitCommitment: {
@@ -267,6 +276,11 @@ export function OperatorMonitorTab(props: {
       await publicClient!.waitForTransactionReceipt({ hash: hash2 });
 
       setPipelineLastTx({ commit: hash1, execute: hash2 });
+      if (j.sealed?.cid) {
+        setPipelineSealHint({ sealed: true, cid: j.sealed.cid });
+      } else {
+        setPipelineSealHint({ sealed: false });
+      }
       setRefreshNonce((n) => n + 1);
     } catch (e: unknown) {
       setPipelineError(e instanceof Error ? e.message : String(e));
@@ -378,18 +392,23 @@ export function OperatorMonitorTab(props: {
       <section className="lg:col-span-5">
         <div className="border border-[#05058a]/15 bg-white p-6">
           <p className="text-[11px] uppercase tracking-[0.22em] text-[#05058a]/65">Agents monitor</p>
-          <p className="mt-2 text-sm text-[#05058a]/70">
-            Live data from <span className="font-mono">GET /api/agents/:agentId</span> (same contract as the UI). Only the{" "}
-            <span className="font-semibold">current</span> agent is shown — the one loaded from registration or pasted id — not every agent ever deployed on-chain.
-          </p>
-          <p className="mt-2 text-[11px] text-[#05058a]/55">
-            API <span className="font-mono">{sealApiLabel}</span>
-          </p>
 
           {regAgents?.err ? (
             <p className="mt-3 text-xs text-amber-900">
-              Could not load registered agents: {regAgents.err} (set <span className="font-mono">CONTRACT_ADDRESS</span> +{" "}
-              <span className="font-mono">RPC_URL</span> on the backend).
+              Could not load registered agents: {regAgents.err}
+              {regAgents.err === "Not Found" || regAgents.err.includes("404") ? (
+                <>
+                  {" "}
+                  Check <span className="font-mono">NEXT_PUBLIC_SEAL_API_URL</span> matches the backend port (default{" "}
+                  <span className="font-mono">3001</span>), or leave it unset so Next proxies to{" "}
+                  <span className="font-mono">SEAL_API_PROXY_TARGET</span>.
+                </>
+              ) : (
+                <>
+                  {" "}
+                  (backend needs <span className="font-mono">CONTRACT_ADDRESS</span> + <span className="font-mono">RPC_URL</span>.)
+                </>
+              )}
             </p>
           ) : null}
           {regAgents && !regAgents.err && regAgents.list.length > 0 ? (
@@ -417,15 +436,6 @@ export function OperatorMonitorTab(props: {
             <p className="mt-3 text-xs text-[#05058a]/55">No agents registered on-chain for this deployment yet.</p>
           ) : null}
 
-          {address && props.registeredAgent?.agentIdBytes32 ? (
-            <p className="mt-3 text-xs leading-relaxed text-[#05058a]/65">
-              Querying agent id{" "}
-              <span className="font-mono text-[10px]">{shortHex(props.registeredAgent.agentIdBytes32, 14)}</span>. If this id does not match the wallet you used
-              for <span className="font-mono">registerAgent</span> + runtime hash, use <span className="font-semibold">paste agent id</span> on the empty state
-              or clear localStorage and reload.
-            </p>
-          ) : null}
-
           {loading ? <p className="mt-4 text-sm text-[#05058a]/70">Loading…</p> : null}
           {error ? (
             <p className="mt-4 text-sm text-rose-800">
@@ -448,8 +458,11 @@ export function OperatorMonitorTab(props: {
 
                 {!summary.registered ? (
                   <div className="mb-4 border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-                    This bytes32 is not a registered agent on the contract — wrong id or wrong network. Use the agent id from the pipeline script output or
-                    re-register with the same wallet + runtime hash.
+                    Not registered on the contract the backend reads ({expectedChain.name}). Align{" "}
+                    <span className="font-mono">CONTRACT_ADDRESS</span> (backend) with{" "}
+                    <span className="font-mono">NEXT_PUBLIC_SEAL_CONTRACT_ADDRESS</span> (this app), confirm the same
+                    wallet + runtime hash as <span className="font-mono">registerAgent</span>, or paste the bytes32 from
+                    your pipeline output.
                   </div>
                 ) : null}
 
@@ -483,7 +496,7 @@ export function OperatorMonitorTab(props: {
                       owner: <span className="font-mono">{shortHex(summary.agentOwner, 8)}</span>
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     <span
                       className={`inline-flex items-center border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${pillTone(
                         summary.registered && !summary.slashed ? "ok" : "bad"
@@ -491,6 +504,23 @@ export function OperatorMonitorTab(props: {
                     >
                       {summary.registered ? "registered" : "not registered"}
                     </span>
+                    {summary.registered && !summary.slashed ? (
+                      <button
+                        type="button"
+                        disabled={pipelineRunning || !address || ownerWalletMismatch}
+                        title={
+                          ownerWalletMismatch
+                            ? "Connect the on-chain owner wallet"
+                            : pipelineRunning
+                              ? "Running…"
+                              : "Run pipeline"
+                        }
+                        onClick={() => void runPipelineWithWallet()}
+                        className="shrink-0 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#05058a] transition-opacity hover:opacity-90 disabled:opacity-50"
+                      >
+                        {pipelineRunning ? "…" : "Run"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 
@@ -506,28 +536,9 @@ export function OperatorMonitorTab(props: {
                 </div>
 
                 {summary.registered && !summary.slashed ? (
-                  <div className="mt-4 border border-white/20 bg-black/20 px-3 py-3">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-white/70">On-chain pipeline</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-white/60">
-                      <span className="font-mono">POST /api/pipeline-prepare</span> runs TEE + attestation off-chain. Your connected wallet then sends{" "}
-                      <span className="font-mono">submitCommitment</span> and <span className="font-mono">executeTask</span> — the owner must match{" "}
-                      <span className="font-mono">registerAgent</span>.
-                    </p>
-                    {ownerWalletMismatch ? (
-                      <p className="mt-2 text-[11px] leading-relaxed text-amber-200">
-                        Connected address does not match on-chain agent owner — switch wallet or load the correct agent id.
-                      </p>
-                    ) : null}
-                    <button
-                      type="button"
-                      disabled={pipelineRunning || !address || ownerWalletMismatch}
-                      onClick={() => void runPipelineWithWallet()}
-                      className="mt-3 w-full bg-white px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#05058a] transition-opacity hover:opacity-90 disabled:opacity-50"
-                    >
-                      {pipelineRunning ? "Running pipeline…" : "Run pipeline (MetaMask)"}
-                    </button>
+                  <>
                     {pipelineError ? (
-                      <p className="mt-2 text-xs leading-relaxed text-rose-200">{pipelineError}</p>
+                      <p className="mt-3 text-xs leading-relaxed text-rose-200">{pipelineError}</p>
                     ) : null}
                     {pipelineLastTx ? (
                       <div className="mt-3 space-y-1 text-[11px] text-white/85">
@@ -563,45 +574,36 @@ export function OperatorMonitorTab(props: {
                         </p>
                       </div>
                     ) : null}
-                  </div>
+                    {pipelineSealHint ? (
+                      <div
+                        className={`mt-3 border px-3 py-2 text-[11px] leading-relaxed ${
+                          pipelineSealHint.sealed
+                            ? "border-emerald-400/40 bg-emerald-950/30 text-emerald-100"
+                            : "border-amber-300/40 bg-amber-950/20 text-amber-100"
+                        }`}
+                      >
+                        {pipelineSealHint.sealed && pipelineSealHint.cid ? (
+                          <>
+                            <span className="font-semibold">Sealed for audit:</span> reasoning encrypted and pinned (CID{" "}
+                            <span className="font-mono">{shortHex(pipelineSealHint.cid, 14)}</span>). Lit key is for the
+                            wallet you had connected when you clicked Run (same as <span className="font-mono">authorizedAddress</span> on the server). Use{" "}
+                            <strong>Audit</strong> → <strong>Decrypt &amp; reveal</strong> when an auditor requests access.
+                          </>
+                        ) : (
+                          <>
+                            <span className="font-semibold">No sealed blob this run:</span> on-chain commit/execute still
+                            succeeded. Configure the backend with Storacha + Lit so <span className="font-mono">sealBlob</span> can
+                            return a CID; otherwise audit reveal has nothing stored for this agent.
+                          </>
+                        )}
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
               </div>
             </div>
           )}
 
-          {props.registeredAgent && props.onLoadAgent ? (
-            <div className="mt-5 border border-dashed border-[#05058a]/25 bg-[#f5f5f0] p-4">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-[#05058a]/60">Wrong tasks or empty?</p>
-              <p className="mt-2 text-xs text-[#05058a]/65">
-                Pipeline / CLI uses <span className="font-mono">SIGNER_PRIVATE_KEY</span> — paste the <span className="font-mono">agentIdBytes32</span> from{" "}
-                <span className="font-mono">npm run pipeline:onchain</span> output (66-char hex).
-              </p>
-              <input
-                value={replaceAgentId}
-                onChange={(e) => setReplaceAgentId(e.target.value.trim())}
-                className="mt-2 w-full border border-[#05058a]/30 bg-white px-3 py-2 font-mono text-[11px] text-[#05058a] outline-none focus:border-[#05058a]"
-                placeholder="0x… (64 hex)"
-              />
-              <button
-                type="button"
-                disabled={!/^0x[a-fA-F0-9]{64}$/.test(replaceAgentId)}
-                onClick={() => {
-                  if (!props.onLoadAgent || !props.registeredAgent) return;
-                  props.onLoadAgent({
-                    agentIdBytes32: replaceAgentId as `0x${string}`,
-                    runtimeHash: props.registeredAgent.runtimeHash,
-                    stakeEth: props.registeredAgent.stakeEth,
-                    agentProfile: props.registeredAgent.agentProfile,
-                    registeredAt: Date.now(),
-                  });
-                  setReplaceAgentId("");
-                }}
-                className="mt-2 w-full border border-[#05058a]/30 bg-white px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-[#05058a] hover:bg-white disabled:opacity-40"
-              >
-                Replace agent id &amp; reload
-              </button>
-            </div>
-          ) : null}
         </div>
       </section>
 
@@ -655,7 +657,7 @@ export function OperatorMonitorTab(props: {
                     <td colSpan={4} className="px-3 py-6 text-center text-[#05058a]/60">
                       {loading
                         ? "…"
-                        : "No tasks yet. Use Run pipeline (on-chain) on the agent card, or run the CLI against the same agent id."}
+                        : "No tasks yet."}
                     </td>
                   </tr>
                 )}

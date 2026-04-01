@@ -41,18 +41,12 @@ export function Operators_Dash() {
             <h1 className="mt-3 text-[clamp(34px,4.8vw,62px)] font-black leading-[0.95] tracking-[-0.03em] text-[#05058a]">
               Control room
             </h1>
-            <p className="mt-4 max-w-[56rem] text-sm leading-relaxed text-[#05058a]/70">
-              Requires: EVM wallet + SEAL contract on the same network as the backend RPC.
-            </p>
           </div>
 
           <div className="w-full md:w-auto md:text-right">
             <div className="md:hidden">
               <ConnectButton chainStatus="icon" showBalance={false} />
             </div>
-            <p className="mt-3 text-[11px] uppercase tracking-[0.18em] text-[#05058a]/55 md:mt-2">
-              Wallet-native identity
-            </p>
           </div>
         </div>
       </div>

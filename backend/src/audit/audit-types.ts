@@ -31,3 +31,20 @@ export function buildAuditRequestMessage(agentIdBytes32: string, auditorAddress:
 export function buildDenyMessage(requestId: string, agentIdBytes32: string): string {
   return `SEAL deny audit request ${requestId} for agent ${agentIdBytes32}`;
 }
+
+/** EIP-191 message binding owner consent to a specific plaintext (via keccak256 commitment). */
+export function buildRevealSubmitMessage(
+  requestId: string,
+  agentIdBytes32: string,
+  auditorAddress: string,
+  plaintextKeccak256: string,
+): string {
+  return [
+    'SEAL — Submit audit reveal',
+    '',
+    `requestId: ${requestId}`,
+    `agentId: ${agentIdBytes32}`,
+    `auditor: ${auditorAddress}`,
+    `plaintextKeccak256: ${plaintextKeccak256}`,
+  ].join('\n');
+}

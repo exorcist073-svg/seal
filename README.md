@@ -344,9 +344,9 @@ NEAR_NETWORK=testnet
 NEAR_ACCOUNT_ID=your.testnet
 NEAR_PRIVATE_KEY=
 
-# Lit Protocol
-LIT_NETWORK=datil-dev
-LIT_API_KEY=
+# Lit Protocol (network name only; no API key for SDK encrypt/decrypt)
+LIT_NETWORK=nagaDev
+# LIT_API_KEY=
 
 # Storacha
 STORACHA_TOKEN=

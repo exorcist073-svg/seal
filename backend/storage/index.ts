@@ -1,4 +1,10 @@
-export { pinBlob, logAuditEntry, verifyCid } from "./filecoin.js";
+import {
+  pinBlob,
+  logAuditEntry,
+  verifyCid,
+  hasStorachaCredentials,
+} from "./filecoin.js";
+export { pinBlob, logAuditEntry, verifyCid, hasStorachaCredentials };
 export { encryptBlob, encryptBlobKey, decryptBlobKey, decryptBlob } from "./lit.js";
 export { storeCredential, getCredential } from "./vault.js";
 export type { PinResult, AuditEntry, AuditEvent } from "./filecoin.js";
@@ -16,7 +22,7 @@ export async function sealBlob(
   encryptedKey: import("./lit.js").EncryptedKey;
   iv: string;
 }> {
-  if (!process.env.STORACHA_PRINCIPAL?.trim() || !process.env.STORACHA_PROOF?.trim()) {
+  if (!hasStorachaCredentials()) {
     return {
       cid: "",
       url: "",
@@ -25,7 +31,6 @@ export async function sealBlob(
     };
   }
 
-  const { pinBlob } = await import("./filecoin.js");
   const { encryptBlob, encryptBlobKey } = await import("./lit.js");
   const { encrypted, key, iv } = encryptBlob(reasoningBlob);
   const [pinResult, encryptedKey] = await Promise.all([

@@ -1,0 +1,36 @@
+diff --git a/node_modules/@lit-protocol/crypto/src/lib/E2EE/e2ee.js b/node_modules/@lit-protocol/crypto/src/lib/E2EE/e2ee.js
+index 99bc3c5..34af082 100644
+--- a/node_modules/@lit-protocol/crypto/src/lib/E2EE/e2ee.js
++++ b/node_modules/@lit-protocol/crypto/src/lib/E2EE/e2ee.js
+@@ -5,14 +5,19 @@ const nacl_1 = require("@lit-protocol/nacl");
+ const utils_1 = require("@noble/curves/abstract/utils");
+ const e2ee_schemas_1 = require("./e2ee.schemas");
+ const schemas_1 = require("@lit-protocol/schemas");
++/** 8-byte big-endian unix seconds (browser-safe; avoids Buffer.writeBigUInt64BE). */
++function unixSecondsTimestampU8(createdAt) {
++    const timestamp = new Uint8Array(8);
++    new DataView(timestamp.buffer).setBigUint64(0, BigInt(createdAt), false);
++    return timestamp;
++}
+ const walletEncrypt = (myWalletSecretKey, theirWalletPublicKey, message) => {
+     const validatedTheirPublicKey = e2ee_schemas_1.Always32BytesSchema.parse(theirWalletPublicKey);
+     const random = new Uint8Array(16);
+     crypto.getRandomValues(random);
+     const dateNow = Date.now();
+     const createdAt = Math.floor(dateNow / 1000);
+-    const timestamp = Buffer.alloc(8);
+-    timestamp.writeBigUInt64BE(BigInt(createdAt), 0);
++    const timestamp = unixSecondsTimestampU8(createdAt);
+     const keyPair = nacl_1.nacl.box.keyPair.fromSecretKey(myWalletSecretKey);
+     const myWalletPublicKey = keyPair.publicKey;
+     const versionByte = new Uint8Array([0x01]);
+@@ -41,8 +46,7 @@ exports.walletEncrypt = walletEncrypt;
+ const walletDecrypt = (myWalletSecretKey, data) => {
+     const dateSent = new Date(data.payload.created_at);
+     const createdAt = Math.floor(dateSent.getTime() / 1000);
+-    const timestamp = Buffer.alloc(8);
+-    timestamp.writeBigUInt64BE(BigInt(createdAt), 0);
++    const timestamp = unixSecondsTimestampU8(createdAt);
+     const keyPair = nacl_1.nacl.box.keyPair.fromSecretKey(myWalletSecretKey);
+     const myWalletPublicKey = keyPair.publicKey;
+     // Use schema to validate and fix their public key

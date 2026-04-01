@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { BayerDitherImage } from "@/components/hero/BayerDitherImage";
 import { ScrollReveal } from "./ScrollReveal";
 
@@ -40,6 +43,33 @@ const USE_CASES = [
 ];
 
 export function ProjectsSection() {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (maxScroll <= 0) return;
+
+      const delta = e.deltaY + e.deltaX;
+      if (delta === 0) return;
+
+      const atStart = el.scrollLeft <= 0;
+      const atEnd = el.scrollLeft >= maxScroll - 0.5;
+
+      if (delta < 0 && atStart) return;
+      if (delta > 0 && atEnd) return;
+
+      e.preventDefault();
+      el.scrollLeft = Math.max(0, Math.min(maxScroll, el.scrollLeft + delta));
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
   return (
     <section id="usecases" className="bg-[#f5f5f0] py-[120px] md:py-[160px]">
       <div className="mx-auto max-w-[1440px] px-6">
@@ -49,7 +79,10 @@ export function ProjectsSection() {
           </h2>
         </ScrollReveal>
 
-        <div className="mt-12 flex gap-6 overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          ref={scrollerRef}
+          className="mt-12 flex gap-6 overflow-x-auto overscroll-x-contain pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {USE_CASES.map((p, i) => (
             <ScrollReveal
               key={p.name}

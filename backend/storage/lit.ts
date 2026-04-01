@@ -1,15 +1,35 @@
 import { createLitClient } from "@lit-protocol/lit-client";
-import { nagaDev } from "@lit-protocol/networks";
 import { generateSessionKeyPair } from "@lit-protocol/crypto";
+import {
+  getHashedAccessControlConditions,
+  validateAccessControlConditions,
+} from "@lit-protocol/access-control-conditions";
+import {
+  createSiweMessage,
+  generateAuthSig,
+  LitAccessControlConditionResource,
+} from "@lit-protocol/auth-helpers";
+import { uint8arrayToString } from "@lit-protocol/uint8arrays";
+import { SessionKeyUriSchema } from "@lit-protocol/schemas";
+import { resolveLitNetwork } from "./lit-network.js";
 import { ethers } from "ethers";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 import { LIT_ABILITY } from "@lit-protocol/constants";
+
+/**
+ * Lit (Naga) decrypt does **not** use a Lit API key. Nodes expect:
+ * 1. Access control conditions + ciphertext (already stored with the sealed blob).
+ * 2. An **AuthSig**: your Ethereum address signs a **SIWE** message (EIP-4361) with ReCap capabilities
+ *    so `issueSessionFromContext` can build valid session sigs. The SIWE **`uri`** must be the Lit
+ *    session-key form `lit:session:<ed25519 pubkey>` (`SessionKeyUriSchema`), not a generic https URL —
+ *    same as `@lit-protocol/auth` `getEoaAuthContext`. The wallet key must match `:userAddress` on the ACC.
+ */
 
 let litClient: Awaited<ReturnType<typeof createLitClient>> | null = null;
 
 async function getLit() {
   if (litClient) return litClient;
-  litClient = await createLitClient({ network: nagaDev });
+  litClient = await createLitClient({ network: resolveLitNetwork() });
   return litClient;
 }
 
@@ -19,9 +39,11 @@ function getSigner(pk?: string) {
   return new ethers.Wallet(key);
 }
 
+/** Same shape `lit.encrypt` / `lit.decrypt` use; `conditionType` matches ACC schemas. */
 function stakerCondition(address: string) {
   return [
     {
+      conditionType: "evmBasic" as const,
       contractAddress: "",
       standardContractType: "" as const,
       chain: "sepolia" as const,
@@ -32,45 +54,86 @@ function stakerCondition(address: string) {
   ];
 }
 
-async function makeAuthContext(signerPk?: string) {
-  const signer = getSigner(signerPk);
-  const sessionKeyPair = generateSessionKeyPair();
+/**
+ * Resource id must match `createLitClient` encrypt identity: `hash(ACC)_base16 + '/' + dataToEncryptHash`
+ * (same as `getHashedAccessControlConditions` + `uint8arrayToString` in lit-client).
+ */
+async function accResourceIdFromEncryptedKey(
+  accs: ReturnType<typeof stakerCondition>,
+  dataToEncryptHash: string
+): Promise<string> {
+  const accParams = { accessControlConditions: accs };
+  await validateAccessControlConditions(accParams);
+  const buf = await getHashedAccessControlConditions(accParams);
+  if (!buf) throw new Error("Failed to hash access control conditions");
+  const hashHex = uint8arrayToString(new Uint8Array(buf), "base16");
+  const dataHex = dataToEncryptHash.trim().toLowerCase();
+  return `${hashHex}/${dataHex}`;
+}
 
+/**
+ * SIWE + ReCap for Naga: session sigs require `Expiration Time:` in each capability, and ReCap must list the
+ * **hashed ACC resource** for this ciphertext (not `*`) — see LitAccessControlConditionResource.generateResourceString.
+ */
+async function signSiweRecapAuth(
+  signer: ethers.Wallet,
+  accResource: InstanceType<typeof LitAccessControlConditionResource>,
+  sessionKeyPair: { publicKey: string; secretKey: string }
+) {
   const expiration = new Date(Date.now() + 1000 * 60 * 60).toISOString();
-  const msg = `SEAL auth: ${Date.now()}|exp:${expiration}`;
-  const sig = await signer.signMessage(msg);
+  const nonce = "0x" + randomBytes(32).toString("hex");
+  const resources = [{ resource: accResource, ability: LIT_ABILITY.AccessControlConditionDecryption }];
+  /** Must be `lit:session:<ed25519 pubkey>` — same as `getEoaAuthContext` / Lit session sigs (not an https URL). */
+  const uri = SessionKeyUriSchema.parse(sessionKeyPair.publicKey);
 
-  const { LitAccessControlConditionResource } = await import("@lit-protocol/auth-helpers");
-  const { LIT_ABILITY } = await import("@lit-protocol/constants");
-
-  const authCallback = async () => ({
-    sig,
-    derivedVia: "web3.eth.personal.sign",
-    signedMessage: msg,
-    address: signer.address,
+  const toSign = await createSiweMessage({
+    walletAddress: ethers.getAddress(signer.address),
+    chainId: 11155111,
+    expiration,
+    nonce,
+    statement: "SEAL Protocol — access-control decryption",
+    domain: "seal-protocol.io",
+    uri,
+    version: "1",
+    resources,
   });
 
-  const authInfo = await authCallback();
-  const resource = new LitAccessControlConditionResource("*");
+  return generateAuthSig({ signer: signer as any, toSign, address: ethers.getAddress(signer.address) });
+}
+
+/**
+ * Builds `authContext` for `lit.decrypt`. Triggers a **fresh SIWE sign** from `signerPk` each decrypt
+ * (the signed payload Lit nodes validate).
+ * `conditionAddress` must match the ACC used at encrypt time (same wallet as `:userAddress`).
+ */
+export async function litDecryptAuthContext(
+  encryptedKey: EncryptedKey,
+  conditionAddress: string,
+  signerPk?: string
+) {
+  const signer = getSigner(signerPk);
+  const sessionKeyPair = generateSessionKeyPair();
+  const accs = stakerCondition(conditionAddress);
+  const resourceId = await accResourceIdFromEncryptedKey(accs, encryptedKey.dataToEncryptHash);
+  const accResource = new LitAccessControlConditionResource(resourceId);
+  const resourceAbilityRequests = [
+    { resource: accResource, ability: LIT_ABILITY.AccessControlConditionDecryption },
+  ];
+  const expiration = new Date(Date.now() + 1000 * 60 * 60).toISOString();
 
   return {
     chain: "sepolia" as const,
     sessionKeyPair,
-    authNeededCallback: authCallback,
+    authNeededCallback: () => signSiweRecapAuth(signer, accResource, sessionKeyPair),
     authConfig: {
-      capabilityAuthSigs: [authInfo],
-      expiration: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
-      statement: "SEAL Protocol Access",
+      capabilityAuthSigs: [] as [],
+      expiration,
+      statement: "SEAL Protocol — access-control decryption",
       domain: "seal-protocol.io",
-      resources: [{ resource, ability: LIT_ABILITY.AccessControlConditionDecryption }],
+      resources: resourceAbilityRequests,
     },
-    resourceAbilityRequests: [
-      {
-        resource,
-        ability: LIT_ABILITY.AccessControlConditionDecryption,
-      },
-    ],
-  } as any;
+    resourceAbilityRequests,
+  };
 }
 
 export interface EncryptedKey {
@@ -89,39 +152,27 @@ export async function encryptBlobKey(aesKey: Buffer, ownerAddress: string): Prom
   return { ciphertext, dataToEncryptHash };
 }
 
+/** Decrypts the Lit-wrapped AES key. `requesterPk` must be the private key for the address that owns the ACC (signs SIWE). */
 export async function decryptBlobKey(
   encryptedKey: EncryptedKey,
   requesterPk: string
 ): Promise<Buffer> {
   const lit = await getLit();
-  const signer = getSigner(requesterPk);
-  const sessionKeyPair = generateSessionKeyPair();
-
-  const requesterAddress = signer.address;
-
-  const authCallback = async () => {
-    const msg = `localhost wants you to sign in with your Ethereum account:\n${signer.address}\n\nURI: http://localhost\nVersion: 1\nChain ID: 11155111\nNonce: ${Date.now()}\nIssued At: ${new Date().toISOString()}\nExpiration Time: ${new Date(Date.now() + 3600000).toISOString()}`;
-    const sig = await signer.signMessage(msg);
-    return {
-      sig,
-      derivedVia: "web3.eth.personal.sign",
-      signedMessage: msg,
-      address: signer.address,
-    };
-  };
+  const requesterAddress = getSigner(requesterPk).address;
+  const ctx = await litDecryptAuthContext(encryptedKey, requesterAddress, requesterPk);
 
   const { decryptedData } = await lit.decrypt({
-    data: {
-      ciphertext: encryptedKey.ciphertext,
-      dataToEncryptHash: encryptedKey.dataToEncryptHash,
-    },
+    ciphertext: encryptedKey.ciphertext,
+    dataToEncryptHash: encryptedKey.dataToEncryptHash,
     accessControlConditions: stakerCondition(requesterAddress),
+    chain: "sepolia",
     authContext: {
-      chain: "sepolia",
-      sessionKeyPair,
-      authNeededCallback: authCallback,
-    } as any,
-  } as any);
+      chain: ctx.chain,
+      sessionKeyPair: ctx.sessionKeyPair,
+      authNeededCallback: ctx.authNeededCallback,
+      authConfig: ctx.authConfig,
+    },
+  });
 
   return Buffer.from(decryptedData);
 }
